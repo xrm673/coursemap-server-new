@@ -40,7 +40,8 @@ export class AuthService {
         first_name,
         last_name,
         entry_year,
-        colleges: { connect: { id: college_id } },
+        college_id,
+        updated_at: new Date(),
       },
       programs,
     );

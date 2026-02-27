@@ -22,14 +22,19 @@ export class UserRepo {
     data: Prisma.usersCreateInput,
     program_ids: string[],
   ) {
-    return this.prisma.users.create({
-      data: {
-        ...data,
-        user_programs: {
-          create: program_ids.map((program_id) => ({ program_id })),
-        },
-      },
-      include: { user_programs: true },
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.users.create({ data });
+
+      if (program_ids.length > 0) {
+        await tx.user_program.createMany({
+          data: program_ids.map((program_id) => ({
+            user_id: user.id,
+            program_id,
+          })),
+        });
+      }
+
+      return user;
     });
   }
 }
