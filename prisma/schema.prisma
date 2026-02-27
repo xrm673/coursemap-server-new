@@ -8,25 +8,26 @@ datasource db {
 }
 
 model class_sections {
-  id                  Int           @id @default(autoincrement())
-  enroll_group_id     Int
-  section_number      String        @db.VarChar(10)
-  class_nbr           Int
-  semester            String        @db.VarChar(10)
-  section_type        String?       @db.VarChar(10)
-  campus              String?       @db.VarChar(10)
-  location            String?       @db.VarChar(20)
-  start_date          DateTime?     @db.Date
-  end_date            DateTime?     @db.Date
-  add_consent         String?       @db.VarChar(5)
-  is_component_graded Boolean?
-  instruction_mode    String?       @db.VarChar(10)
-  section_topic       String?       @db.Text
-  open_status         String?       @db.VarChar(5)
-  created_at          DateTime      @db.DateTime(0)
-  updated_at          DateTime      @db.DateTime(0)
-  enroll_groups       enroll_groups @relation(fields: [enroll_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "class_sections_ibfk_1")
-  meetings            meetings[]
+  id                   Int                    @id @default(autoincrement())
+  enroll_group_id      Int
+  section_number       String                 @db.VarChar(10)
+  class_nbr            Int
+  semester             String                 @db.VarChar(10)
+  section_type         String?                @db.VarChar(10)
+  campus               String?                @db.VarChar(10)
+  location             String?                @db.VarChar(20)
+  start_date           DateTime?              @db.Date
+  end_date             DateTime?              @db.Date
+  add_consent          String?                @db.VarChar(5)
+  is_component_graded  Boolean?
+  instruction_mode     String?                @db.VarChar(10)
+  section_topic        String?                @db.Text
+  open_status          String?                @db.VarChar(5)
+  created_at           DateTime               @db.DateTime(0)
+  updated_at           DateTime               @db.DateTime(0)
+  enroll_groups        enroll_groups          @relation(fields: [enroll_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "class_sections_ibfk_1")
+  meetings             meetings[]
+  user_courses_section user_courses_section[]
 
   @@unique([enroll_group_id, section_number], map: "uq_eg_section")
   @@index([class_nbr, semester], map: "ix_class_nbr_semester")
@@ -74,6 +75,7 @@ model courses {
   subjects              subjects            @relation(fields: [subject], references: [value], onDelete: NoAction, onUpdate: NoAction, map: "courses_ibfk_1")
   enroll_groups         enroll_groups[]
   node_courses          node_courses[]
+  user_courses          user_courses[]
 
   @@index([last_offered_year], map: "ix_courses_last_offered_year")
   @@index([subject], map: "subject")
@@ -319,14 +321,44 @@ model user_program {
 }
 
 model users {
-  id         Int      @id @default(autoincrement())
-  net_id     String   @unique @db.VarChar(15)
-  email      String   @unique @db.VarChar(255)
-  password   String   @db.VarChar(255)
-  first_name String   @db.VarChar(50)
-  last_name  String   @db.VarChar(50)
-  college_id String   @db.VarChar(20)
-  entry_year String   @db.VarChar(10)
-  created_at DateTime @default(now()) @db.DateTime(0)
-  updated_at DateTime @db.DateTime(0)
+  id           Int            @id @default(autoincrement())
+  net_id       String         @unique @db.VarChar(15)
+  email        String         @unique @db.VarChar(255)
+  password     String         @db.VarChar(255)
+  first_name   String         @db.VarChar(50)
+  last_name    String         @db.VarChar(50)
+  college_id   String         @db.VarChar(20)
+  entry_year   String         @db.VarChar(10)
+  created_at   DateTime       @default(now()) @db.DateTime(0)
+  updated_at   DateTime       @db.DateTime(0)
+  user_courses user_courses[]
+}
+
+model user_courses {
+  id                   Int                    @id @default(autoincrement())
+  user_id              Int
+  course_id            String                 @db.VarChar(20)
+  topic                String                 @db.VarChar(255)
+  credits_received     Float?                 @db.Float
+  semester             String?                @db.VarChar(10)
+  is_scheduled         Boolean
+  created_at           DateTime               @db.DateTime(0)
+  updated_at           DateTime               @db.DateTime(0)
+  users                users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_courses_ibfk_1")
+  courses              courses                @relation(fields: [course_id], references: [id], onUpdate: NoAction, map: "user_courses_ibfk_2")
+  user_courses_section user_courses_section[]
+
+  @@unique([user_id, course_id, semester, topic], map: "uq_user_course_semester_topic")
+  @@index([course_id], map: "ix_user_courses_course_id")
+  @@index([user_id], map: "ix_user_courses_user_id")
+}
+
+model user_courses_section {
+  user_course_id   Int
+  class_section_id Int
+  user_courses     user_courses   @relation(fields: [user_course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_courses_section_ibfk_1")
+  class_sections   class_sections @relation(fields: [class_section_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_courses_section_ibfk_2")
+
+  @@id([user_course_id, class_section_id])
+  @@index([class_section_id], map: "class_section_id")
 }
