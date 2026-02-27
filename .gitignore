@@ -1,0 +1,18 @@
+# compiled output
+/dist
+/node_modules
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# Prisma
+prisma/migrations/
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store

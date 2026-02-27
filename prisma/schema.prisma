@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model class_sections {
+  id                  Int           @id @default(autoincrement())
+  enroll_group_id     Int
+  section_number      String        @db.VarChar(10)
+  class_nbr           Int
+  semester            String        @db.VarChar(10)
+  section_type        String?       @db.VarChar(10)
+  campus              String?       @db.VarChar(10)
+  location            String?       @db.VarChar(20)
+  start_date          DateTime?     @db.Date
+  end_date            DateTime?     @db.Date
+  add_consent         String?       @db.VarChar(5)
+  is_component_graded Boolean?
+  instruction_mode    String?       @db.VarChar(10)
+  section_topic       String?       @db.Text
+  open_status         String?       @db.VarChar(5)
+  created_at          DateTime      @db.DateTime(0)
+  updated_at          DateTime      @db.DateTime(0)
+  enroll_groups       enroll_groups @relation(fields: [enroll_group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "class_sections_ibfk_1")
+  meetings            meetings[]
+
+  @@unique([enroll_group_id, section_number], map: "uq_eg_section")
+  @@index([class_nbr, semester], map: "ix_class_nbr_semester")
+  @@index([enroll_group_id], map: "ix_class_sections_enroll_group_id")
+}
+
+model combined_groups {
+  id            Int             @id @default(autoincrement())
+  semester      String          @db.VarChar(10)
+  created_at    DateTime        @db.DateTime(0)
+  updated_at    DateTime        @db.DateTime(0)
+  enroll_groups enroll_groups[]
+
+  @@index([semester], map: "ix_combined_groups_semester")
+}
+
+model course_attributes {
+  course_id       String  @db.VarChar(20)
+  attribute_value String  @db.VarChar(50)
+  attribute_type  String? @db.VarChar(255)
+  courses         courses @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "course_attributes_ibfk_1")
+
+  @@id([course_id, attribute_value])
+  @@index([attribute_value], map: "idx_attribute_value")
+}
+
+model courses {
+  id                    String              @id @db.VarChar(20)
+  subject               String              @db.VarChar(10)
+  number                String              @db.VarChar(10)
+  level                 Int
+  title_short           String?             @db.VarChar(255)
+  title_long            String?             @db.Text
+  description           String?             @db.Text
+  enrollment_priority   String?             @db.Text
+  forbidden_overlaps    String?             @db.Text
+  prereq                String?             @db.Text
+  coreq                 String?             @db.Text
+  fee                   String?             @db.Text
+  acad_career           String?             @db.VarChar(255)
+  acad_group            String?             @db.VarChar(255)
+  last_offered_semester String?             @db.VarChar(10)
+  last_offered_year     Int?
+  course_attributes     course_attributes[]
+  subjects              subjects            @relation(fields: [subject], references: [value], onDelete: NoAction, onUpdate: NoAction, map: "courses_ibfk_1")
+  enroll_groups         enroll_groups[]
+  node_courses          node_courses[]
+
+  @@index([last_offered_year], map: "ix_courses_last_offered_year")
+  @@index([subject], map: "subject")
+}
+
+model enroll_groups {
+  id                   Int              @id @default(autoincrement())
+  course_id            String           @db.VarChar(20)
+  semester             String           @db.VarChar(10)
+  first_section_number String           @db.VarChar(10)
+  topic                String?          @db.VarChar(255)
+  credits_minimum      Float?           @db.Float
+  credits_maximum      Float?           @db.Float
+  grading_basis        String?          @db.VarChar(50)
+  session_code         String?          @db.VarChar(10)
+  combined_with_json   String?          @db.Text
+  combined_group_id    Int?
+  created_at           DateTime         @db.DateTime(0)
+  updated_at           DateTime         @db.DateTime(0)
+  class_sections       class_sections[]
+  courses              courses          @relation(fields: [course_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "enroll_groups_ibfk_1")
+  combined_groups      combined_groups? @relation(fields: [combined_group_id], references: [id], onUpdate: NoAction, map: "enroll_groups_ibfk_2")
+
+  @@unique([course_id, semester, first_section_number], map: "uq_course_semester_first_section")
+  @@index([course_id, semester], map: "ix_enroll_group_course_semester")
+  @@index([combined_group_id], map: "ix_enroll_groups_combined_group_id")
+  @@index([course_id], map: "ix_enroll_groups_course_id")
+  @@index([semester], map: "ix_enroll_groups_semester")
+  @@index([topic], map: "ix_enroll_groups_topic")
+}
+
+model instructors {
+  netid               String                @id @db.VarChar(15)
+  first_name          String?               @db.VarChar(50)
+  middle_name         String?               @db.VarChar(50)
+  last_name           String?               @db.VarChar(50)
+  created_at          DateTime              @db.DateTime(0)
+  updated_at          DateTime              @db.DateTime(0)
+  meeting_instructors meeting_instructors[]
+}
+
+model meeting_instructors {
+  meeting_id       Int
+  instructor_netid String      @db.VarChar(15)
+  assign_seq       Int
+  meetings         meetings    @relation(fields: [meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "meeting_instructors_ibfk_1")
+  instructors      instructors @relation(fields: [instructor_netid], references: [netid], onDelete: NoAction, onUpdate: NoAction, map: "meeting_instructors_ibfk_2")
+
+  @@id([meeting_id, instructor_netid])
+  @@index([instructor_netid], map: "instructor_netid")
+}
+
+model meetings {
+  id                  Int                   @id @default(autoincrement())
+  class_section_id    Int
+  time_start          String?               @db.VarChar(10)
+  time_end            String?               @db.VarChar(10)
+  pattern             String?               @db.VarChar(10)
+  start_date          DateTime?             @db.Date
+  end_date            DateTime?             @db.Date
+  created_at          DateTime              @db.DateTime(0)
+  updated_at          DateTime              @db.DateTime(0)
+  meeting_instructors meeting_instructors[]
+  class_sections      class_sections        @relation(fields: [class_section_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "meetings_ibfk_1")
+
+  @@index([class_section_id], map: "ix_meetings_class_section_id")
+}
+
+model node_children {
+  parent_node_id                                                    String            @db.VarChar(50)
+  child_node_id                                                     String            @db.VarChar(50)
+  position                                                          Int
+  requirement_nodes_node_children_parent_node_idTorequirement_nodes requirement_nodes @relation("node_children_parent_node_idTorequirement_nodes", fields: [parent_node_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "node_children_ibfk_1")
+  requirement_nodes_node_children_child_node_idTorequirement_nodes  requirement_nodes @relation("node_children_child_node_idTorequirement_nodes", fields: [child_node_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "node_children_ibfk_2")
+
+  @@id([parent_node_id, child_node_id])
+  @@index([child_node_id], map: "child_node_id")
+}
+
+model node_courses {
+  node_id           String            @db.VarChar(50)
+  course_id         String            @db.VarChar(20)
+  requirement_id    String            @db.VarChar(50)
+  topic             String            @db.VarChar(255)
+  combined_group_id Int?
+  comment           String?           @db.Text
+  recommended       Boolean
+  requirement_nodes requirement_nodes @relation(fields: [node_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "node_courses_ibfk_1")
+  courses           courses           @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "node_courses_ibfk_2")
+  requirements      requirements      @relation(fields: [requirement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "node_courses_ibfk_3")
+
+  @@id([node_id, course_id, topic])
+  @@index([course_id], map: "course_id")
+  @@index([requirement_id], map: "requirement_id")
+}
+
+model programs {
+  id                      String                @id @db.VarChar(20)
+  name                    String                @db.VarChar(255)
+  type                    String                @db.VarChar(10)
+  year_dependent          Boolean
+  major_dependent         Boolean
+  college_dependent       Boolean
+  concentration_dependent Boolean
+  onboarding_courses      Json?
+  requirement_domains     requirement_domains[]
+  requirement_sets        requirement_sets[]
+  requirements            requirements[]
+}
+
+model requirement_domain_memberships {
+  domain_id           Int
+  requirement_id      String              @db.VarChar(50)
+  requirement_domains requirement_domains @relation(fields: [domain_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_domain_memberships_ibfk_1")
+  requirements        requirements        @relation(fields: [requirement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_domain_memberships_ibfk_2")
+
+  @@id([domain_id, requirement_id])
+  @@index([requirement_id], map: "requirement_id")
+}
+
+model requirement_domains {
+  id                             Int                              @id @default(autoincrement())
+  program_id                     String                           @db.VarChar(20)
+  requirement_domain_memberships requirement_domain_memberships[]
+  programs                       programs                         @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_domains_ibfk_1")
+
+  @@index([program_id], map: "ix_requirement_domains_program_id")
+}
+
+model requirement_nodes {
+  id                                                            String          @id @db.VarChar(50)
+  requirement_id                                                String          @db.VarChar(50)
+  type                                                          String          @db.VarChar(20)
+  title                                                         String?         @db.VarChar(255)
+  pick_count                                                    Int
+  node_children_node_children_parent_node_idTorequirement_nodes node_children[] @relation("node_children_parent_node_idTorequirement_nodes")
+  node_children_node_children_child_node_idTorequirement_nodes  node_children[] @relation("node_children_child_node_idTorequirement_nodes")
+  node_courses                                                  node_courses[]
+  requirements_requirement_nodes_requirement_idTorequirements   requirements    @relation("requirement_nodes_requirement_idTorequirements", fields: [requirement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_nodes_ibfk_1")
+  requirements_requirements_root_node_idTorequirement_nodes     requirements[]  @relation("requirements_root_node_idTorequirement_nodes")
+
+  @@index([requirement_id], map: "ix_requirement_nodes_requirement_id")
+}
+
+model requirement_set_requirements {
+  requirement_set_id Int
+  requirement_id     String           @db.VarChar(50)
+  position           Int
+  requirement_sets   requirement_sets @relation(fields: [requirement_set_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_set_requirements_ibfk_1")
+  requirements       requirements     @relation(fields: [requirement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_set_requirements_ibfk_2")
+
+  @@id([requirement_set_id, requirement_id])
+  @@index([requirement_id], map: "requirement_id")
+}
+
+model requirement_sets {
+  id                             Int                            @id @default(autoincrement())
+  program_id                     String                         @db.VarChar(20)
+  applies_to_entry_year          String?                        @db.VarChar(10)
+  applies_to_college_id          String?                        @db.VarChar(10)
+  applies_to_major_id            String?                        @db.VarChar(20)
+  applies_to_concentration_names Json?
+  requirement_set_requirements   requirement_set_requirements[]
+  programs                       programs                       @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirement_sets_ibfk_1")
+
+  @@index([program_id], map: "ix_requirement_sets_program_id")
+}
+
+model requirements {
+  id                                                               String                           @id @db.VarChar(50)
+  program_id                                                       String                           @db.VarChar(20)
+  name                                                             String                           @db.VarChar(255)
+  ui_type                                                          String                           @db.VarChar(20)
+  description                                                      Json?
+  root_node_id                                                     String?                          @db.VarChar(50)
+  node_courses                                                     node_courses[]
+  requirement_domain_memberships                                   requirement_domain_memberships[]
+  requirement_nodes_requirement_nodes_requirement_idTorequirements requirement_nodes[]              @relation("requirement_nodes_requirement_idTorequirements")
+  requirement_set_requirements                                     requirement_set_requirements[]
+  programs                                                         programs                         @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirements_ibfk_1")
+  requirement_nodes_requirements_root_node_idTorequirement_nodes   requirement_nodes?               @relation("requirements_root_node_idTorequirement_nodes", fields: [root_node_id], references: [id], onUpdate: NoAction, map: "requirements_ibfk_2")
+
+  @@index([program_id], map: "ix_requirements_program_id")
+  @@index([root_node_id], map: "root_node_id")
+}
+
+model subjects {
+  value              String    @id @db.VarChar(10)
+  description        String    @db.VarChar(100)
+  description_formal String    @db.VarChar(100)
+  created_at         DateTime  @db.DateTime(0)
+  updated_at         DateTime  @db.DateTime(0)
+  courses            courses[]
+}
