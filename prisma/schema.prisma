@@ -309,3 +309,24 @@ model program_subjects {
   @@id([program_id, subject_id])
   @@index([subject_id], map: "subject_id")
 }
+
+model user_program {
+  user_id    Int
+  program_id String @db.VarChar(20)
+
+  @@id([user_id, program_id])
+  @@index([program_id])
+}
+
+model users {
+  id         Int      @id @default(autoincrement())
+  net_id     String   @unique @db.VarChar(15)
+  email      String   @unique @db.VarChar(255)
+  password   String   @db.VarChar(255)
+  first_name String   @db.VarChar(50)
+  last_name  String   @db.VarChar(50)
+  college_id String   @db.VarChar(20)
+  entry_year String   @db.VarChar(10)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @db.DateTime(0)
+}
