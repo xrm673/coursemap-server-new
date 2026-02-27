@@ -179,6 +179,8 @@ model programs {
   college_dependent       Boolean
   concentration_dependent Boolean
   onboarding_courses      Json?
+  college_programs        college_programs[]
+  program_subjects        program_subjects[]
   requirement_domains     requirement_domains[]
   requirement_sets        requirement_sets[]
   requirements            requirements[]
@@ -261,10 +263,49 @@ model requirements {
 }
 
 model subjects {
-  value              String    @id @db.VarChar(10)
-  description        String    @db.VarChar(100)
-  description_formal String    @db.VarChar(100)
-  created_at         DateTime  @db.DateTime(0)
-  updated_at         DateTime  @db.DateTime(0)
+  value              String             @id @db.VarChar(10)
+  description        String             @db.VarChar(100)
+  description_formal String             @db.VarChar(100)
+  created_at         DateTime           @db.DateTime(0)
+  updated_at         DateTime           @db.DateTime(0)
+  college_subjects   college_subjects[]
   courses            courses[]
+  program_subjects   program_subjects[]
+}
+
+model college_programs {
+  college_id String   @db.VarChar(20)
+  program_id String   @db.VarChar(50)
+  colleges   colleges @relation(fields: [college_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "college_programs_ibfk_1")
+  programs   programs @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "college_programs_ibfk_2")
+
+  @@id([college_id, program_id])
+  @@index([program_id], map: "program_id")
+}
+
+model college_subjects {
+  college_id String   @db.VarChar(20)
+  subject_id String   @db.VarChar(10)
+  colleges   colleges @relation(fields: [college_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "college_subjects_ibfk_1")
+  subjects   subjects @relation(fields: [subject_id], references: [value], onDelete: Cascade, onUpdate: NoAction, map: "college_subjects_ibfk_2")
+
+  @@id([college_id, subject_id])
+  @@index([subject_id], map: "subject_id")
+}
+
+model colleges {
+  id               String             @id @db.VarChar(20)
+  name             String             @db.VarChar(255)
+  college_programs college_programs[]
+  college_subjects college_subjects[]
+}
+
+model program_subjects {
+  program_id String   @db.VarChar(50)
+  subject_id String   @db.VarChar(10)
+  programs   programs @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "program_subjects_ibfk_1")
+  subjects   subjects @relation(fields: [subject_id], references: [value], onDelete: Cascade, onUpdate: NoAction, map: "program_subjects_ibfk_2")
+
+  @@id([program_id, subject_id])
+  @@index([subject_id], map: "subject_id")
 }
