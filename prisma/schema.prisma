@@ -173,19 +173,21 @@ model node_courses {
 }
 
 model programs {
-  id                      String                @id @db.VarChar(20)
-  name                    String                @db.VarChar(255)
-  type                    String                @db.VarChar(10)
+  id                      String                   @id @db.VarChar(20)
+  name                    String                   @db.VarChar(255)
+  type                    String                   @db.VarChar(10)
   year_dependent          Boolean
   major_dependent         Boolean
   college_dependent       Boolean
   concentration_dependent Boolean
   onboarding_courses      Json?
   college_programs        college_programs[]
+  program_concentrations  program_concentrations[]
   program_subjects        program_subjects[]
   requirement_domains     requirement_domains[]
   requirement_sets        requirement_sets[]
   requirements            requirements[]
+  user_program            user_program[]
 }
 
 model requirement_domain_memberships {
@@ -252,16 +254,20 @@ model requirements {
   name                                                             String                           @db.VarChar(255)
   ui_type                                                          String                           @db.VarChar(20)
   description                                                      Json?
+  concentration_id                                                 Int?
   root_node_id                                                     String?                          @db.VarChar(50)
   node_courses                                                     node_courses[]
   requirement_domain_memberships                                   requirement_domain_memberships[]
   requirement_nodes_requirement_nodes_requirement_idTorequirements requirement_nodes[]              @relation("requirement_nodes_requirement_idTorequirements")
   requirement_set_requirements                                     requirement_set_requirements[]
   programs                                                         programs                         @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "requirements_ibfk_1")
+  program_concentrations                                           program_concentrations?          @relation(fields: [concentration_id], references: [id], onUpdate: NoAction, map: "requirements_ibfk_2")
   requirement_nodes_requirements_root_node_idTorequirement_nodes   requirement_nodes?               @relation("requirements_root_node_idTorequirement_nodes", fields: [root_node_id], references: [id], onUpdate: NoAction, map: "requirements_ibfk_2")
+  user_course_requirements                                         user_course_requirements[]
 
   @@index([program_id], map: "ix_requirements_program_id")
   @@index([root_node_id], map: "root_node_id")
+  @@index([concentration_id], map: "ix_requirements_concentration_id")
 }
 
 model subjects {
@@ -300,6 +306,7 @@ model colleges {
   name             String             @db.VarChar(255)
   college_programs college_programs[]
   college_subjects college_subjects[]
+  users            users[]
 }
 
 model program_subjects {
@@ -314,39 +321,47 @@ model program_subjects {
 
 model user_program {
   user_id    Int
-  program_id String @db.VarChar(20)
+  program_id String   @db.VarChar(20)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_program_ibfk_1")
+  programs   programs @relation(fields: [program_id], references: [id], onUpdate: NoAction, map: "user_program_ibfk_2")
 
   @@id([user_id, program_id])
-  @@index([program_id])
+  @@index([program_id], map: "ix_user_program_program_id")
 }
 
 model users {
-  id           Int            @id @default(autoincrement())
-  net_id       String         @unique @db.VarChar(15)
-  email        String         @unique @db.VarChar(255)
-  password     String         @db.VarChar(255)
-  first_name   String         @db.VarChar(50)
-  last_name    String         @db.VarChar(50)
-  college_id   String         @db.VarChar(20)
-  entry_year   String         @db.VarChar(10)
-  created_at   DateTime       @default(now()) @db.DateTime(0)
-  updated_at   DateTime       @db.DateTime(0)
-  user_courses user_courses[]
+  id                 Int                  @id @default(autoincrement())
+  netid              String               @unique(map: "netid") @db.VarChar(15)
+  email              String               @unique(map: "email") @db.VarChar(255)
+  password           String               @db.VarChar(255)
+  first_name         String               @db.VarChar(50)
+  last_name          String               @db.VarChar(50)
+  college_id         String               @db.VarChar(20)
+  entry_year         String               @db.VarChar(10)
+  created_at         DateTime             @db.DateTime(0)
+  updated_at         DateTime             @db.DateTime(0)
+  user_concentration user_concentration[]
+  user_courses       user_courses[]
+  user_program       user_program[]
+  colleges           colleges             @relation(fields: [college_id], references: [id], onUpdate: NoAction, map: "users_ibfk_1")
+
+  @@index([college_id], map: "college_id")
 }
 
 model user_courses {
-  id                   Int                    @id @default(autoincrement())
-  user_id              Int
-  course_id            String                 @db.VarChar(20)
-  topic                String                 @db.VarChar(255)
-  credits_received     Float?                 @db.Float
-  semester             String?                @db.VarChar(10)
-  is_scheduled         Boolean
-  created_at           DateTime               @db.DateTime(0)
-  updated_at           DateTime               @db.DateTime(0)
-  users                users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_courses_ibfk_1")
-  courses              courses                @relation(fields: [course_id], references: [id], onUpdate: NoAction, map: "user_courses_ibfk_2")
-  user_courses_section user_courses_section[]
+  id                       Int                        @id @default(autoincrement())
+  user_id                  Int
+  course_id                String                     @db.VarChar(20)
+  topic                    String                     @db.VarChar(255)
+  credits_received         Float?                     @db.Float
+  semester                 String?                    @db.VarChar(10)
+  is_scheduled             Boolean
+  created_at               DateTime                   @db.DateTime(0)
+  updated_at               DateTime                   @db.DateTime(0)
+  user_course_requirements user_course_requirements[]
+  users                    users                      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_courses_ibfk_1")
+  courses                  courses                    @relation(fields: [course_id], references: [id], onUpdate: NoAction, map: "user_courses_ibfk_2")
+  user_courses_section     user_courses_section[]
 
   @@unique([user_id, course_id, semester, topic], map: "uq_user_course_semester_topic")
   @@index([course_id], map: "ix_user_courses_course_id")
@@ -361,4 +376,36 @@ model user_courses_section {
 
   @@id([user_course_id, class_section_id])
   @@index([class_section_id], map: "class_section_id")
+}
+
+model program_concentrations {
+  id                 Int                  @id @default(autoincrement())
+  program_id         String               @db.VarChar(20)
+  concentration_name String               @db.VarChar(255)
+  programs           programs             @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "program_concentrations_ibfk_1")
+  requirements       requirements[]
+  user_concentration user_concentration[]
+
+  @@unique([program_id, concentration_name], map: "uq_program_concentration")
+  @@index([program_id], map: "ix_program_concentrations_program_id")
+}
+
+model user_concentration {
+  user_id                Int
+  concentration_id       Int
+  users                  users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_concentration_ibfk_1")
+  program_concentrations program_concentrations @relation(fields: [concentration_id], references: [id], onUpdate: NoAction, map: "user_concentration_ibfk_2")
+
+  @@id([user_id, concentration_id])
+  @@index([concentration_id], map: "ix_user_concentration_concentration_id")
+}
+
+model user_course_requirements {
+  user_course_id Int
+  requirement_id String       @db.VarChar(50)
+  user_courses   user_courses @relation(fields: [user_course_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_course_requirements_ibfk_1")
+  requirements   requirements @relation(fields: [requirement_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_course_requirements_ibfk_2")
+
+  @@id([user_course_id, requirement_id])
+  @@index([requirement_id], map: "ix_user_course_requirement_requirement_id")
 }
