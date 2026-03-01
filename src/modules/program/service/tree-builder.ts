@@ -58,17 +58,19 @@ export interface RequirementInfo {
   ui_type: 'GROUP' | 'LIST';
 }
 
-const EMPTY_SUMMARY = {
-  is_fulfilled: false,
-  completed_course_ids: [] as string[],
-  completed_not_used_course_ids: [] as string[],
-  in_progress_course_ids: [] as string[],
-  in_progress_not_used_course_ids: [] as string[],
-  planned_course_ids: [] as string[],
-  planned_not_used_course_ids: [] as string[],
-  saved_course_ids: [] as string[],
-  saved_not_used_course_ids: [] as string[],
-};
+function createEmptySummary() {
+  return {
+    is_fulfilled: false,
+    completed_applied_course_ids: [] as string[],
+    completed_unapplied_course_ids: [] as string[],
+    in_progress_applied_course_ids: [] as string[],
+    in_progress_unapplied_course_ids: [] as string[],
+    planned_applied_course_ids: [] as string[],
+    planned_unapplied_course_ids: [] as string[],
+    saved_applied_course_ids: [] as string[],
+    saved_unapplied_course_ids: [] as string[],
+  };
+}
 
 // ── 主函数 ──
 
@@ -179,7 +181,7 @@ function buildNode(
     return {
       ...base,
       required_course_ids,
-      summary: { ...EMPTY_SUMMARY },
+      summary: createEmptySummary(),
     };
   }
 

@@ -34,16 +34,16 @@ class CourseSet extends NodeBase {
 class CourseSetSummary {
     is_fulfilled: boolean;
     
-    completed_course_ids: string[];
-    completed_not_used_course_ids: string[];
+    completed_applied_course_ids: string[];
+    completed_unapplied_course_ids: string[];
     
-    in_progress_course_ids: string[];
-    in_progress_not_used_course_ids: string[];
+    in_progress_applied_course_ids: string[];
+    in_progress_unapplied_course_ids: string[];
     
-    planned_course_ids: string[];
-    planned_not_used_course_ids: string[];
+    planned_applied_course_ids: string[];
+    planned_unapplied_course_ids: string[];
     
-    saved_course_ids: string[];
-    saved_not_used_course_ids: string[];
+    saved_applied_course_ids: string[];
+    saved_unapplied_course_ids: string[];
 }
 

@@ -7,6 +7,14 @@ import {
 } from './requirement-resolver';
 import { buildRequirementTrees, NodeInput } from './tree-builder';
 import { buildCourseOptions } from './course-builder';
+import {
+  computeFulfillment,
+  determineStatus,
+  UserCourseInput,
+} from './fulfillment';
+import { CURRENT_SEMESTER } from '../../../common/constants';
+import { latestSemester } from '../../../common/semester';
+import { courseKey } from './course-key';
 
 @Injectable()
 export class ProgramService {
@@ -52,7 +60,6 @@ export class ProgramService {
       entry_year: userCtx.entry_year,
       college_id: userCtx.college_id,
       major_ids: userCtx.user_program.map((up) => up.program_id),
-      // 只取当前 program 下的 concentration names
       concentration_names: userCtx.user_concentration
         .map((uc) => uc.program_concentrations)
         .filter((pc) => pc.program_id === programId)
@@ -84,7 +91,6 @@ export class ProgramService {
       this.programRepo.findNodesByRequirementIds(requirementIds),
     ]);
 
-    // 将 Prisma 的 ugly 命名映射为干净的 NodeInput
     const nodes: NodeInput[] = nodeRows.map((n) => ({
       id: n.id,
       type: n.type,
@@ -109,19 +115,19 @@ export class ProgramService {
         program.program_concentrations,
       );
 
-    // ── 阶段四：获取课程数据并组装 CourseOption 字典 ──
+    // ── 阶段四：获取课程数据 ──
     const courseIds = [...new Set(courseEntries.map((e) => e.course_id))];
 
-    const [courseRows, enrollGroupRows] = await Promise.all([
-      this.programRepo.findCoursesByIds(courseIds),
-      this.programRepo.findEnrollGroupsByCourseIds(courseIds),
-    ]);
+    const [courseRows, enrollGroupRows, userCourseRows, domainMemberships] =
+      await Promise.all([
+        this.programRepo.findCoursesByIds(courseIds),
+        this.programRepo.findEnrollGroupsByCourseIds(courseIds),
+        this.programRepo.findUserCoursesByCourseIds(userId, courseIds),
+        this.programRepo.findDomainMemberships(requirementIds),
+      ]);
 
     // 收集需要详细 section 数据的 enroll_group IDs
-    const selectedEgIds = selectEnrollGroupIds(
-      courseEntries,
-      enrollGroupRows,
-    );
+    const selectedEgIds = selectEnrollGroupIds(courseEntries, enrollGroupRows);
 
     // 收集 combined_group_ids
     const combinedGroupIds = [
@@ -132,7 +138,6 @@ export class ProgramService {
       ),
     ];
 
-    // 并行获取 sections 和 combined course 数据
     const [sectionRows, combinedRows] = await Promise.all([
       selectedEgIds.length > 0
         ? this.programRepo.findSectionsByEnrollGroupIds(selectedEgIds)
@@ -142,6 +147,19 @@ export class ProgramService {
         : Promise.resolve([]),
     ]);
 
+    // ── 阶段五：Fulfillment 计算 ──
+
+    // 将 user_courses 映射为 fulfillment 引擎的输入
+    // 同一个 courseKey 可能有多条 user_course（不同学期），取优先级最高的
+    const userCourseMap = buildUserCourseMap(userCourseRows);
+
+    const fulfillment = computeFulfillment(
+      requirements,
+      [...userCourseMap.values()],
+      domainMemberships,
+    );
+
+    // ── 阶段六：组装 CourseOption 字典 ──
     const courses = buildCourseOptions(
       courseEntries,
       courseMetaMap,
@@ -149,7 +167,21 @@ export class ProgramService {
       enrollGroupRows,
       sectionRows,
       combinedRows,
+      userCourseMap,
+      fulfillment.courseApplied,
+      fulfillment.courseUnapplied,
     );
+
+    // ── 阶段七：写回 user_course_requirements（异步，不阻塞响应） ──
+    this.programRepo
+      .writebackUserCourseRequirements(
+        fulfillment.toInsert,
+        fulfillment.toDelete,
+      )
+      .catch((err) => {
+        // 写回失败不影响响应，仅记录错误
+        console.error('Failed to writeback user_course_requirements:', err);
+      });
 
     // ── 返回 ──
     return {
@@ -158,9 +190,9 @@ export class ProgramService {
         is_user_program: userCtx.user_program.some(
           (up) => up.program_id === programId,
         ),
-        is_fulfilled: false,
-        completed_courses_count: 0,
-        required_courses_count: 0,
+        is_fulfilled: fulfillment.programFulfilled,
+        completed_courses_count: fulfillment.completedCoursesCount,
+        required_courses_count: fulfillment.requiredCoursesCount,
       },
       concentration_names,
       courses,
@@ -169,12 +201,62 @@ export class ProgramService {
   }
 }
 
-// ── 辅助：为每个 courseEntry 选定学期，返回需要查 section 的 enroll_group IDs ──
+// ── 辅助函数 ──
 
-import { CURRENT_SEMESTER } from '../../../common/constants';
-import { latestSemester } from '../../../common/semester';
-import { courseKey } from './course-key';
+/**
+ * 将 user_courses Prisma 结果映射为 fulfillment 引擎输入。
+ * 同一 courseKey 可能有多条记录（不同学期），取最高优先级的：
+ * COMPLETED > IN_PROGRESS > PLANNED > SAVED
+ */
+function buildUserCourseMap(
+  userCourseRows: {
+    id: number;
+    course_id: string;
+    topic: string;
+    credits_received: number | null;
+    semester: string | null;
+    is_scheduled: boolean;
+    user_course_requirements: { requirement_id: string }[];
+    user_courses_section: {
+      class_sections: { section_number: string };
+    }[];
+  }[],
+): Map<string, UserCourseInput> {
+  const STATUS_RANK = { COMPLETED: 0, IN_PROGRESS: 1, PLANNED: 2, SAVED: 3 };
+  const map = new Map<string, UserCourseInput>();
 
+  for (const row of userCourseRows) {
+    const key = courseKey(row.course_id, row.topic);
+    const status = determineStatus(row.is_scheduled, row.semester);
+    const entry: UserCourseInput = {
+      id: row.id,
+      course_key: key,
+      status,
+      credits_received: row.credits_received,
+      semester: row.semester,
+      section_numbers: row.user_courses_section.map(
+        (ucs) => ucs.class_sections.section_number,
+      ),
+      existing_requirement_ids: row.user_course_requirements.map(
+        (ucr) => ucr.requirement_id,
+      ),
+    };
+
+    const existing = map.get(key);
+    if (
+      !existing ||
+      STATUS_RANK[status] < STATUS_RANK[existing.status] ||
+      (STATUS_RANK[status] === STATUS_RANK[existing.status] &&
+        row.id < existing.id)
+    ) {
+      map.set(key, entry);
+    }
+  }
+
+  return map;
+}
+
+/** 为每个 courseEntry 选定学期，返回需要查 section 的 enroll_group IDs */
 function selectEnrollGroupIds(
   courseEntries: { course_id: string; topic: string }[],
   allEnrollGroups: {
@@ -187,14 +269,12 @@ function selectEnrollGroupIds(
   const ids: number[] = [];
 
   for (const entry of courseEntries) {
-    // 筛选匹配的 enroll groups
     const matching = allEnrollGroups.filter((eg) => {
       if (eg.course_id !== entry.course_id) return false;
       if (entry.topic && (eg.topic ?? '') !== entry.topic) return false;
       return true;
     });
 
-    // 选学期
     const semesters = [...new Set(matching.map((eg) => eg.semester))];
     const targetSemester = semesters.includes(CURRENT_SEMESTER)
       ? CURRENT_SEMESTER

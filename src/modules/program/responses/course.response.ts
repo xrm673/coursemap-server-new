@@ -101,6 +101,6 @@ class CombinedCourseInfo {
 
 class UnappliesToRequirement {
     requirement_id: string;
-    reason: string;
+    reason: "OVERLIMIT" | "CONFLICT" | "INACTIVE";
     blocked_by_requirement_id: string;
 }

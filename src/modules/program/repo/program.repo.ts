@@ -125,4 +125,57 @@ export class ProgramRepo {
       distinct: ['course_id', 'combined_group_id'],
     });
   }
+
+  /** 查用户的选课记录（含 applied requirements 和 sections） */
+  findUserCoursesByCourseIds(userId: number, courseIds: string[]) {
+    return this.prisma.user_courses.findMany({
+      where: { user_id: userId, course_id: { in: courseIds } },
+      include: {
+        user_course_requirements: {
+          select: { requirement_id: true },
+        },
+        user_courses_section: {
+          select: {
+            class_sections: {
+              select: { section_number: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  /** 查 requirement domain memberships（用于冲突检测） */
+  findDomainMemberships(requirementIds: string[]) {
+    return this.prisma.requirement_domain_memberships.findMany({
+      where: { requirement_id: { in: requirementIds } },
+      select: { domain_id: true, requirement_id: true },
+    });
+  }
+
+  /** 写回 user_course_requirements（事务：删旧增新） */
+  async writebackUserCourseRequirements(
+    toInsert: { user_course_id: number; requirement_id: string }[],
+    toDelete: { user_course_id: number; requirement_id: string }[],
+  ) {
+    if (toInsert.length === 0 && toDelete.length === 0) return;
+
+    await this.prisma.$transaction(async (tx) => {
+      if (toDelete.length > 0) {
+        await tx.user_course_requirements.deleteMany({
+          where: {
+            OR: toDelete.map((d) => ({
+              user_course_id: d.user_course_id,
+              requirement_id: d.requirement_id,
+            })),
+          },
+        });
+      }
+      if (toInsert.length > 0) {
+        await tx.user_course_requirements.createMany({
+          data: toInsert,
+        });
+      }
+    });
+  }
 }

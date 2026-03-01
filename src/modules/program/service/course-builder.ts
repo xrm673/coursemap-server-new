@@ -3,10 +3,14 @@
  * 接收从 Repo 查出的原始数据，返回 Record<courseKey, CourseOption>。
  */
 
-import { CURRENT_SEMESTER } from '../../../common/constants';
+import {
+  CURRENT_SEMESTER,
+  UNAVAILABLE_LOCATIONS,
+} from '../../../common/constants';
 import { latestSemester } from '../../../common/semester';
 import { courseKey } from './course-key';
 import { CourseEntry, CourseMeta } from './tree-builder';
+import { UserCourseInput, UnappliesToEntry } from './fulfillment';
 
 // ── 输入类型（松散，匹配 Prisma 查询结果即可） ──
 
@@ -92,6 +96,12 @@ export function buildCourseOptions(
   allEnrollGroups: EnrollGroupRow[],
   sections: SectionRow[],
   combinedData: CombinedRow[],
+  /** 用户选课信息（fulfillment 引擎的输入） */
+  userCourseMap: Map<string, UserCourseInput>,
+  /** 每门课 apply 到的 requirement_ids */
+  courseApplied: Map<string, string[]>,
+  /** 每门课无法 apply 的 requirement 列表 */
+  courseUnapplied: Map<string, UnappliesToEntry[]>,
 ): Record<string, any> {
   // ── 构建查找表 ──
   const courseMap = new Map(courses.map((c) => [c.id, c]));
@@ -165,6 +175,11 @@ export function buildCourseOptions(
         )
       : [];
 
+    // 用户状态
+    const uc = userCourseMap.get(key);
+    const applies = courseApplied.get(key) ?? [];
+    const unapplies = courseUnapplied.get(key) ?? [];
+
     result[key] = {
       id: entry.course_id,
       topic: entry.topic,
@@ -193,14 +208,18 @@ export function buildCourseOptions(
       },
       enroll_groups: enrollGroups,
       user_state: {
-        status: 'NOT_ON_SCHEDULE',
-        credits_received: null,
-        semester: null,
-        sections_numbers: [],
+        status: uc?.status ?? 'NOT_ON_SCHEDULE',
+        credits_received: uc?.credits_received ?? null,
+        semester: uc?.semester ?? null,
+        sections_numbers: uc?.section_numbers ?? [],
         is_semester_available: isSemesterAvailable,
-        is_location_available: false, // Step 6 会计算
-        applies_to_requirements: [],
-        unapplies_to_requirements: [],
+        is_location_available: !enrollGroups
+          .flatMap((eg) => eg.class_sections)
+          .some(
+            (s) => s.location && UNAVAILABLE_LOCATIONS.includes(s.location),
+          ),
+        applies_to_requirements: applies,
+        unapplies_to_requirements: unapplies,
       },
       combined_course_info: {
         combined_group_id: combinedGroupId,
