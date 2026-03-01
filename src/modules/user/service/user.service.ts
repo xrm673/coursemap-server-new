@@ -10,8 +10,8 @@ export class UserService {
     return this.userRepo.findByEmail(email);
   }
 
-  async findByNetId(net_id: string) {
-    return this.userRepo.findByNetId(net_id);
+  async findByNetId(netid: string) {
+    return this.userRepo.findByNetId(netid);
   }
 
   async findById(id: number) {

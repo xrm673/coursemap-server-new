@@ -10,7 +10,7 @@ import {
 export class RegisterDto {
   @IsString()
   @IsNotEmpty()
-  net_id: string;
+  netid: string;
 
   @IsEmail()
   email: string;

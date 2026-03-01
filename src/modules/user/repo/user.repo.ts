@@ -10,8 +10,8 @@ export class UserRepo {
     return this.prisma.users.findUnique({ where: { email } });
   }
 
-  async findByNetId(net_id: string) {
-    return this.prisma.users.findUnique({ where: { net_id } });
+  async findByNetId(netid: string) {
+    return this.prisma.users.findUnique({ where: { netid } });
   }
 
   async findById(id: number) {

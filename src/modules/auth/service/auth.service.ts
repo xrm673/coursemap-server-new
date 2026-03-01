@@ -20,14 +20,14 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const { net_id, email, password, first_name, last_name, college_id, entry_year, programs } = dto;
+    const { netid, email, password, first_name, last_name, college_id, entry_year, programs } = dto;
 
     const existingByEmail = await this.userService.findByEmail(email);
     if (existingByEmail) {
       throw new ConflictException('该邮箱已被注册');
     }
 
-    const existingByNetId = await this.userService.findByNetId(net_id);
+    const existingByNetId = await this.userService.findByNetId(netid);
     if (existingByNetId) {
       throw new ConflictException('该 NetID 已被注册');
     }
@@ -36,7 +36,7 @@ export class AuthService {
 
     const user = await this.userService.create(
       {
-        net_id,
+        netid,
         email,
         password: hashed,
         first_name,
