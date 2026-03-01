@@ -23,7 +23,12 @@ export interface NodeInput {
   title: string | null;
   pick_count: number;
   child_node_ids: string[]; // 已按 position 排序
-  courses: { course_id: string; topic: string }[];
+  courses: {
+    course_id: string;
+    topic: string;
+    requirement_id: string;
+    combined_group_id: number | null;
+  }[];
 }
 
 export interface ConcentrationInput {
@@ -36,6 +41,12 @@ export interface ConcentrationInput {
 export interface CourseEntry {
   course_id: string;
   topic: string;
+}
+
+/** 每门课在 requirement 树中的额外元信息 */
+export interface CourseMeta {
+  requirement_ids: string[];
+  combined_group_id: number | null;
 }
 
 export interface RequirementInfo {
@@ -77,8 +88,9 @@ export function buildRequirementTrees(
     concentrationMap.set(c.id, c.concentration_name);
   }
 
-  // 收集所有课程条目（去重）
+  // 收集所有课程条目（去重）+ 元信息
   const courseEntryMap = new Map<string, CourseEntry>();
+  const courseMetaMap = new Map<string, CourseMeta>();
 
   // 为每个 requirement 构建树
   const result = requirements.map((req) => {
@@ -94,7 +106,7 @@ export function buildRequirementTrees(
     };
 
     const root_node = req.root_node_id
-      ? buildNode(req.root_node_id, nodeMap, courseEntryMap)
+      ? buildNode(req.root_node_id, nodeMap, courseEntryMap, courseMetaMap)
       : null;
 
     return { info, root_node };
@@ -103,6 +115,7 @@ export function buildRequirementTrees(
   return {
     requirements: result,
     courseEntries: Array.from(courseEntryMap.values()),
+    courseMetaMap,
   };
 }
 
@@ -112,6 +125,7 @@ function buildNode(
   nodeId: string,
   nodeMap: Map<string, NodeInput>,
   courseEntryMap: Map<string, CourseEntry>,
+  courseMetaMap: Map<string, CourseMeta>,
 ): any {
   const node = nodeMap.get(nodeId);
   if (!node) return null;
@@ -125,7 +139,7 @@ function buildNode(
 
   if (node.type === 'SELECT') {
     const children = node.child_node_ids
-      .map((id) => buildNode(id, nodeMap, courseEntryMap))
+      .map((id) => buildNode(id, nodeMap, courseEntryMap, courseMetaMap))
       .filter(Boolean);
 
     return {
@@ -138,7 +152,27 @@ function buildNode(
   if (node.type === 'COURSE_SET') {
     const required_course_ids = node.courses.map((nc) => {
       const key = courseKey(nc.course_id, nc.topic);
+
+      // 收集课程条目
       courseEntryMap.set(key, { course_id: nc.course_id, topic: nc.topic });
+
+      // 收集元信息（同一门课可能出现在多个 requirement 中）
+      const existing = courseMetaMap.get(key);
+      if (existing) {
+        if (!existing.requirement_ids.includes(nc.requirement_id)) {
+          existing.requirement_ids.push(nc.requirement_id);
+        }
+        // combined_group_id 取第一个非 null 的值
+        if (existing.combined_group_id === null && nc.combined_group_id !== null) {
+          existing.combined_group_id = nc.combined_group_id;
+        }
+      } else {
+        courseMetaMap.set(key, {
+          requirement_ids: [nc.requirement_id],
+          combined_group_id: nc.combined_group_id,
+        });
+      }
+
       return key;
     });
 

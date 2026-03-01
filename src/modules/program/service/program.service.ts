@@ -6,6 +6,7 @@ import {
   UserContext,
 } from './requirement-resolver';
 import { buildRequirementTrees, NodeInput } from './tree-builder';
+import { buildCourseOptions } from './course-builder';
 
 @Injectable()
 export class ProgramService {
@@ -96,16 +97,61 @@ export class ProgramService {
       courses: n.node_courses.map((nc) => ({
         course_id: nc.course_id,
         topic: nc.topic,
+        requirement_id: nc.requirement_id,
+        combined_group_id: nc.combined_group_id,
       })),
     }));
 
-    const { requirements, courseEntries } = buildRequirementTrees(
-      requirementRows,
-      nodes,
-      program.program_concentrations, // 用于查 concentration_name
+    const { requirements, courseEntries, courseMetaMap } =
+      buildRequirementTrees(
+        requirementRows,
+        nodes,
+        program.program_concentrations,
+      );
+
+    // ── 阶段四：获取课程数据并组装 CourseOption 字典 ──
+    const courseIds = [...new Set(courseEntries.map((e) => e.course_id))];
+
+    const [courseRows, enrollGroupRows] = await Promise.all([
+      this.programRepo.findCoursesByIds(courseIds),
+      this.programRepo.findEnrollGroupsByCourseIds(courseIds),
+    ]);
+
+    // 收集需要详细 section 数据的 enroll_group IDs
+    const selectedEgIds = selectEnrollGroupIds(
+      courseEntries,
+      enrollGroupRows,
     );
 
-    // ── 返回（后续步骤会用 courseEntries 获取课程数据并填充 courses 和 fulfillment） ──
+    // 收集 combined_group_ids
+    const combinedGroupIds = [
+      ...new Set(
+        Array.from(courseMetaMap.values())
+          .map((m) => m.combined_group_id)
+          .filter((id): id is number => id !== null),
+      ),
+    ];
+
+    // 并行获取 sections 和 combined course 数据
+    const [sectionRows, combinedRows] = await Promise.all([
+      selectedEgIds.length > 0
+        ? this.programRepo.findSectionsByEnrollGroupIds(selectedEgIds)
+        : Promise.resolve([]),
+      combinedGroupIds.length > 0
+        ? this.programRepo.findCombinedCourseIds(combinedGroupIds)
+        : Promise.resolve([]),
+    ]);
+
+    const courses = buildCourseOptions(
+      courseEntries,
+      courseMetaMap,
+      courseRows,
+      enrollGroupRows,
+      sectionRows,
+      combinedRows,
+    );
+
+    // ── 返回 ──
     return {
       info,
       summary: {
@@ -117,10 +163,51 @@ export class ProgramService {
         required_courses_count: 0,
       },
       concentration_names,
-      courses: {},
+      courses,
       requirements,
-      // 临时暴露，方便调试，后续步骤会移除
-      _debug: { requirementIds, courseEntries },
     };
   }
+}
+
+// ── 辅助：为每个 courseEntry 选定学期，返回需要查 section 的 enroll_group IDs ──
+
+import { CURRENT_SEMESTER } from '../../../common/constants';
+import { latestSemester } from '../../../common/semester';
+import { courseKey } from './course-key';
+
+function selectEnrollGroupIds(
+  courseEntries: { course_id: string; topic: string }[],
+  allEnrollGroups: {
+    id: number;
+    course_id: string;
+    semester: string;
+    topic: string | null;
+  }[],
+): number[] {
+  const ids: number[] = [];
+
+  for (const entry of courseEntries) {
+    // 筛选匹配的 enroll groups
+    const matching = allEnrollGroups.filter((eg) => {
+      if (eg.course_id !== entry.course_id) return false;
+      if (entry.topic && (eg.topic ?? '') !== entry.topic) return false;
+      return true;
+    });
+
+    // 选学期
+    const semesters = [...new Set(matching.map((eg) => eg.semester))];
+    const targetSemester = semesters.includes(CURRENT_SEMESTER)
+      ? CURRENT_SEMESTER
+      : latestSemester(semesters);
+
+    if (targetSemester) {
+      for (const eg of matching) {
+        if (eg.semester === targetSemester) {
+          ids.push(eg.id);
+        }
+      }
+    }
+  }
+
+  return [...new Set(ids)];
 }
