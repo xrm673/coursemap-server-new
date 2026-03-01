@@ -21,4 +21,8 @@ export class UserService {
   async create(data: Prisma.usersCreateInput, program_ids: string[]) {
     return this.userRepo.create(data, program_ids);
   }
+
+  async findUserContext(userId: number) {
+    return this.userRepo.findUserContext(userId);
+  }
 }

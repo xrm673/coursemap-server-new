@@ -18,6 +18,29 @@ export class UserRepo {
     return this.prisma.users.findUnique({ where: { id } });
   }
 
+  async findUserContext(userId: number) {
+    return this.prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        entry_year: true,
+        college_id: true,
+        user_program: {
+          select: { program_id: true },
+        },
+        user_concentration: {
+          select: {
+            program_concentrations: {
+              select: {
+                program_id: true,
+                concentration_name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async create(
     data: Prisma.usersCreateInput,
     program_ids: string[],
