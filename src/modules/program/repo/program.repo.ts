@@ -30,4 +30,34 @@ export class ProgramRepo {
       },
     });
   }
+
+  findRequirementsByIds(ids: string[]) {
+    return this.prisma.requirements.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        ui_type: true,
+        description: true,
+        concentration_id: true,
+        root_node_id: true,
+        program_id: true,
+      },
+    });
+  }
+
+  findNodesByRequirementIds(requirementIds: string[]) {
+    return this.prisma.requirement_nodes.findMany({
+      where: { requirement_id: { in: requirementIds } },
+      include: {
+        node_children_node_children_parent_node_idTorequirement_nodes: {
+          orderBy: { position: 'asc' as const },
+          select: { child_node_id: true },
+        },
+        node_courses: {
+          select: { course_id: true, topic: true },
+        },
+      },
+    });
+  }
 }

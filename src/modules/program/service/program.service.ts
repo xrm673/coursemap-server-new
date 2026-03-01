@@ -5,6 +5,7 @@ import {
   resolveRequirementIds,
   UserContext,
 } from './requirement-resolver';
+import { buildRequirementTrees, NodeInput } from './tree-builder';
 
 @Injectable()
 export class ProgramService {
@@ -76,7 +77,35 @@ export class ProgramService {
       user,
     );
 
-    // ── 返回（后续步骤会用 requirementIds 构建 requirements 树和 courses） ──
+    // ── 阶段三：构建 Requirement 树 ──
+    const [requirementRows, nodeRows] = await Promise.all([
+      this.programRepo.findRequirementsByIds(requirementIds),
+      this.programRepo.findNodesByRequirementIds(requirementIds),
+    ]);
+
+    // 将 Prisma 的 ugly 命名映射为干净的 NodeInput
+    const nodes: NodeInput[] = nodeRows.map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      pick_count: n.pick_count,
+      child_node_ids:
+        n.node_children_node_children_parent_node_idTorequirement_nodes.map(
+          (c) => c.child_node_id,
+        ),
+      courses: n.node_courses.map((nc) => ({
+        course_id: nc.course_id,
+        topic: nc.topic,
+      })),
+    }));
+
+    const { requirements, courseEntries } = buildRequirementTrees(
+      requirementRows,
+      nodes,
+      program.program_concentrations, // 用于查 concentration_name
+    );
+
+    // ── 返回（后续步骤会用 courseEntries 获取课程数据并填充 courses 和 fulfillment） ──
     return {
       info,
       summary: {
@@ -89,9 +118,9 @@ export class ProgramService {
       },
       concentration_names,
       courses: {},
-      requirements: [],
+      requirements,
       // 临时暴露，方便调试，后续步骤会移除
-      _debug: { requirementIds },
+      _debug: { requirementIds, courseEntries },
     };
   }
 }
