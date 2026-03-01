@@ -19,4 +19,15 @@ export class ProgramRepo {
       },
     });
   }
+
+  findRequirementSets(programId: string) {
+    return this.prisma.requirement_sets.findMany({
+      where: { program_id: programId },
+      include: {
+        requirement_set_requirements: {
+          select: { requirement_id: true },
+        },
+      },
+    });
+  }
 }
