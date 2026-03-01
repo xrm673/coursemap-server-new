@@ -1,4 +1,4 @@
-type CourseOptionType = "COURSE" | "REPLACEMENT"
+type CourseOptionType = "COURSE" // 暂时只有这一种
 type CourseTakingStatus = "COMPLETED" | "IN_PROGRESS" | "PLANNED" | "SAVED" | "NOT_ON_SCHEDULE"
 
 export class CourseOption {
@@ -8,8 +8,7 @@ export class CourseOption {
     course_info: CourseInfo;
     enroll_groups: EnrollGroup[];
     user_state: CourseUserState;
-    used_in_requirements: string[];
-    not_used_in_requirements: NotUsedInRequirement[];
+    combined_course_info: CombinedCourseInfo;
 }
 
 class CourseInfo {
@@ -29,6 +28,7 @@ class CourseInfo {
     last_offered_semester: string;
     last_offered_year: number;
     course_attributes: CourseAttribute[];
+    satisfies_requirements: string[];
 }
 
 class CourseAttribute {
@@ -87,12 +87,19 @@ class CourseUserState {
     status: CourseTakingStatus;
     credits_received: number;
     semester: string;
-    sections: string[];
+    sections_numbers: string[];
     is_semester_available: boolean;
     is_location_available: boolean;
+    applies_to_requirements: string[];
+    unapplies_to_requirements: UnappliesToRequirement[];
 }
 
-class NotUsedInRequirement {
+class CombinedCourseInfo {
+    combined_group_id: number;
+    combined_course_ids: string[];
+}
+
+class UnappliesToRequirement {
     requirement_id: string;
     reason: string;
     blocked_by_requirement_id: string;

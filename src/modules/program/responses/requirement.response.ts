@@ -20,11 +20,13 @@ class NodeBase {
 }
 
 class Select extends NodeBase {
+    type: "SELECT";
     children: Select[] | CourseSet[];
     fulfilled_child_ids: string[];
 }
 
 class CourseSet extends NodeBase {
+    type: "COURSE_SET";
     required_course_ids: string[];
     summary: CourseSetSummary;
 }

@@ -13,7 +13,6 @@ class ProgramInfo {
     id: string;
     name: string;
     type: "major" | "minor";
-    description: string;
     colleges: CollegeInProgram[];
     relevant_subjects: string[];
 }
