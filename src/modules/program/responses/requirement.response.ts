@@ -1,9 +1,9 @@
-export class Requirement {
+export interface Requirement {
     info: RequirementInfo;
     root_node: Select | CourseSet;
 }
 
-class RequirementInfo {
+interface RequirementInfo {
     id: string;
     name: string;
     description: string[];
@@ -12,26 +12,26 @@ class RequirementInfo {
     ui_type: "GROUP" | "LIST";
 }
 
-class NodeBase {
+interface NodeBase {
     id: string;
     type: "SELECT" | "COURSE_SET";
     title: string;
     pick_count: number;
 }
 
-class Select extends NodeBase {
+interface Select extends NodeBase {
     type: "SELECT";
-    children: Select[] | CourseSet[];
+    children: (Select | CourseSet)[];
     fulfilled_child_ids: string[];
 }
 
-class CourseSet extends NodeBase {
+interface CourseSet extends NodeBase {
     type: "COURSE_SET";
     required_course_ids: string[];
     summary: CourseSetSummary;
 }
 
-class CourseSetSummary {
+interface CourseSetSummary {
     is_fulfilled: boolean;
     
     completed_applied_course_ids: string[];
@@ -46,4 +46,3 @@ class CourseSetSummary {
     saved_applied_course_ids: string[];
     saved_unapplied_course_ids: string[];
 }
-

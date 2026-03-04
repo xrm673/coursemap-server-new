@@ -1,7 +1,7 @@
 import { CourseOption } from "./course.response";
 import { Requirement } from "./requirement.response";
 
-export class ProgramResponse {
+export interface ProgramResponse {
     info: ProgramInfo;
     summary: ProgramSummary;
     concentration_names: string[];
@@ -9,7 +9,7 @@ export class ProgramResponse {
     requirements: Requirement[];
 }
 
-class ProgramInfo {
+interface ProgramInfo {
     id: string;
     name: string;
     type: "major" | "minor";
@@ -17,12 +17,12 @@ class ProgramInfo {
     relevant_subjects: string[];
 }
 
-class CollegeInProgram {
+interface CollegeInProgram {
     id: string;
     name: string;
 }
 
-class ProgramSummary {
+interface ProgramSummary {
     is_user_program: boolean;
     is_fulfilled: boolean;
     completed_courses_count: number;

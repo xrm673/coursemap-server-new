@@ -1,7 +1,7 @@
 type CourseOptionType = "COURSE" // 暂时只有这一种
 type CourseTakingStatus = "COMPLETED" | "IN_PROGRESS" | "PLANNED" | "SAVED" | "NOT_ON_SCHEDULE"
 
-export class CourseOption {
+export interface CourseOption {
     id: string;
     topic: string;
     type: CourseOptionType;
@@ -11,7 +11,7 @@ export class CourseOption {
     combined_course_info: CombinedCourseInfo;
 }
 
-class CourseInfo {
+interface CourseInfo {
     subject: string;
     number: string;
     level: number;
@@ -31,12 +31,12 @@ class CourseInfo {
     satisfies_requirements: string[];
 }
 
-class CourseAttribute {
+interface CourseAttribute {
     attribute_value: string;
     attribute_type: string;
 }
 
-class EnrollGroup {
+interface EnrollGroup {
     id: number;
     semester: string;
     first_section_number: string;
@@ -49,7 +49,7 @@ class EnrollGroup {
     class_sections: ClassSection[];
 }
 
-class ClassSection {
+interface ClassSection {
     id: number;
     section_type: string;
     section_number: string;
@@ -66,7 +66,7 @@ class ClassSection {
     meetings: Meeting[];
 }
 
-class Meeting {
+interface Meeting {
     id: number;
     time_start: string;
     time_end: string;
@@ -76,14 +76,14 @@ class Meeting {
     instructors: Instructor[];
 }
 
-class Instructor {
+interface Instructor {
     netid: string;
     first_name: string;
     middle_name: string;
     last_name: string;
 }
 
-class CourseUserState {
+interface CourseUserState {
     status: CourseTakingStatus;
     credits_received: number;
     semester: string;
@@ -94,12 +94,12 @@ class CourseUserState {
     unapplies_to_requirements: UnappliesToRequirement[];
 }
 
-class CombinedCourseInfo {
+interface CombinedCourseInfo {
     combined_group_id: number;
     combined_course_ids: string[];
 }
 
-class UnappliesToRequirement {
+interface UnappliesToRequirement {
     requirement_id: string;
     reason: "OVERLIMIT" | "CONFLICT" | "INACTIVE";
     blocked_by_requirement_id: string;
