@@ -95,7 +95,7 @@ export class ProgramService {
       id: n.id,
       type: n.type,
       title: n.title,
-      pick_count: n.pick_count,
+      rule: n.rule,
       child_node_ids:
         n.node_children_node_children_parent_node_idTorequirement_nodes.map(
           (c) => c.child_node_id,

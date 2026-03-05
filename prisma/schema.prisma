@@ -264,7 +264,7 @@ model requirement_nodes {
   requirement_id                                                String          @db.VarChar(50)
   type                                                          String          @db.VarChar(20)
   title                                                         String?         @db.VarChar(255)
-  pick_count                                                    Int
+  rule                                                          Json
   node_children_node_children_parent_node_idTorequirement_nodes node_children[] @relation("node_children_parent_node_idTorequirement_nodes")
   node_children_node_children_child_node_idTorequirement_nodes  node_children[] @relation("node_children_child_node_idTorequirement_nodes")
   node_courses                                                  node_courses[]

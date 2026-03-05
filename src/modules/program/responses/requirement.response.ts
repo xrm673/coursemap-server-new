@@ -12,11 +12,22 @@ interface RequirementInfo {
     ui_type: "GROUP" | "LIST";
 }
 
+interface SelectRule {
+    required_children_count?: number;
+    required_units_count?: number;
+    units_type?: "COURSE" | "CREDIT";
+}
+
+interface CourseSetRule {
+    required_units_count: number;
+    units_type: "COURSE" | "CREDIT";
+}
+
 interface NodeBase {
     id: string;
     type: "SELECT" | "COURSE_SET";
     title: string;
-    pick_count: number;
+    rule: SelectRule | CourseSetRule;
 }
 
 interface Select extends NodeBase {

@@ -21,7 +21,7 @@ export interface NodeInput {
   id: string;
   type: string;
   title: string | null;
-  pick_count: number;
+  rule: unknown; // Json — SELECT 或 COURSE_SET 的规则对象
   child_node_ids: string[]; // 已按 position 排序
   courses: {
     course_id: string;
@@ -136,7 +136,7 @@ function buildNode(
     id: node.id,
     type: node.type,
     title: node.title ?? '',
-    pick_count: node.pick_count,
+    rule: node.rule,
   };
 
   if (node.type === 'SELECT') {
