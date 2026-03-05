@@ -34,6 +34,12 @@ interface Select extends NodeBase {
     type: "SELECT";
     children: (Select | CourseSet)[];
     fulfilled_child_ids: string[];
+    summary: SelectSummary;
+}
+
+interface SelectSummary {
+    is_fulfilled: boolean;
+    applied_units_count: number;
 }
 
 interface CourseSet extends NodeBase {
@@ -44,6 +50,7 @@ interface CourseSet extends NodeBase {
 
 interface CourseSetSummary {
     is_fulfilled: boolean;
+    applied_units_count: number;
     
     completed_applied_course_ids: string[];
     completed_unapplied_course_ids: string[];

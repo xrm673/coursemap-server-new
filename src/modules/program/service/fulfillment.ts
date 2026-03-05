@@ -10,7 +10,8 @@
  *   Phase 3 — 收集 COURSE_SET 信息
  *   Phase 4A — 课程分配（按 COURSE_SET 自身 cap）
  *   Phase 4B — 补充分配（满足父级 SELECT 的 required_units_count）
- *   Phase 5 — 填充 summary
+ *   Phase 5A — 填充 COURSE_SET summary（含 applied_units_count）
+ *   Phase 5B — 填充 SELECT summary（is_fulfilled + applied_units_count）
  *   Phase 6 — 计算 writeback diff 和 program-level 汇总
  */
 
@@ -69,6 +70,8 @@ export interface FulfillmentResult {
   programFulfilled: boolean;
   completedCoursesCount: number;
   requiredCoursesCount: number;
+  completedCreditsCount: number;
+  requiredCreditsCount: number;
 }
 
 // ── 内部类型 ──
@@ -170,9 +173,21 @@ export function computeFulfillment(
     }
   }
 
-  // ── Phase 5: 填充 COURSE_SET summary ──
+  // ── Phase 5A: 填充 COURSE_SET summary ──
   for (const csInfo of courseSetInfos) {
     fillNodeSummary(csInfo, courseStatusMap, applyState.courseApplied);
+  }
+
+  // ── Phase 5B: 填充 SELECT summary ──
+  for (const req of requirements) {
+    if (req.root_node) {
+      fillSelectSummaries(
+        req.root_node,
+        req.info.id,
+        courseStatusMap,
+        applyState.courseApplied,
+      );
+    }
   }
 
   // ── Phase 6: Writeback diff ──
@@ -184,24 +199,36 @@ export function computeFulfillment(
   // ── Phase 7: Program 级别汇总 ──
   let programFulfilled = true;
   let requiredCoursesCount = 0;
+  let requiredCreditsCount = 0;
   for (const req of requirements) {
-    if (req.root_node && !req.root_node._fulfilled) {
-      programFulfilled = false;
+    if (req.root_node) {
+      if (!req.root_node._fulfilled) {
+        programFulfilled = false;
+      }
+      const reqCounts = computeRequiredUnits(req.root_node);
+      requiredCoursesCount += reqCounts.courses;
+      requiredCreditsCount += reqCounts.credits;
     }
   }
 
-  const completedApplied = new Set<string>();
+  // 统计已完成且 applied 的课程数和学分数（按维度分别去重）
+  const completedCourseKeys = new Set<string>(); // COURSE 维度
+  const completedCreditKeys = new Set<string>(); // CREDIT 维度（去重用）
+  let completedCreditsCount = 0;
   for (const csInfo of courseSetInfos) {
-    if (csInfo.isActive && csInfo.rule.units_type === 'COURSE') {
-      requiredCoursesCount += csInfo.rule.required_units_count;
-    }
+    if (!csInfo.isActive) continue;
     for (const ck of csInfo.courseKeys) {
       const uc = courseStatusMap.get(ck);
       if (
         uc?.status === 'COMPLETED' &&
         (applyState.courseApplied.get(ck) ?? []).includes(csInfo.requirementId)
       ) {
-        completedApplied.add(ck);
+        if (csInfo.rule.units_type === 'COURSE') {
+          completedCourseKeys.add(ck);
+        } else if (!completedCreditKeys.has(ck)) {
+          completedCreditKeys.add(ck);
+          completedCreditsCount += uc.credits_received ?? 0;
+        }
       }
     }
   }
@@ -212,9 +239,68 @@ export function computeFulfillment(
     toInsert,
     toDelete,
     programFulfilled,
-    completedCoursesCount: completedApplied.size,
+    completedCoursesCount: completedCourseKeys.size,
     requiredCoursesCount,
+    completedCreditsCount,
+    requiredCreditsCount,
   };
+}
+
+/**
+ * 递归计算一个节点的 "effective" required 课程数和学分数。
+ *
+ * 规则：
+ * - COURSE_SET: 按 units_type 分别计入 courses 或 credits
+ * - SELECT:
+ *   - 如果有 required_units_count，以它为主（优先级高于子节点之和）
+ *   - 否则，取 required_children_count 个 fulfilled 子节点的贡献之和
+ *     （如果也没有 required_children_count，则取所有子节点之和）
+ */
+function computeRequiredUnits(node: any): { courses: number; credits: number } {
+  if (node.type === 'COURSE_SET') {
+    const rule = node.rule as { required_units_count: number; units_type: 'COURSE' | 'CREDIT' };
+    if (rule.units_type === 'CREDIT') {
+      return { courses: 0, credits: rule.required_units_count };
+    }
+    return { courses: rule.required_units_count, credits: 0 };
+  }
+
+  if (node.type === 'SELECT') {
+    const rule = node.rule as {
+      required_children_count?: number;
+      required_units_count?: number;
+      units_type?: 'COURSE' | 'CREDIT';
+    };
+
+    // 如果 SELECT 自己有 required_units_count，以它为主
+    if (rule.required_units_count !== undefined) {
+      if (rule.units_type === 'CREDIT') {
+        return { courses: 0, credits: rule.required_units_count };
+      }
+      return { courses: rule.required_units_count, credits: 0 };
+    }
+
+    // 否则，取子节点贡献之和
+    const childCounts = (node.children as any[]).map((c: any) => computeRequiredUnits(c));
+
+    if (rule.required_children_count !== undefined) {
+      // 取 required_children_count 个贡献最大的子节点
+      childCounts.sort((a, b) => (b.courses + b.credits) - (a.courses + a.credits));
+      const selected = childCounts.slice(0, rule.required_children_count);
+      return {
+        courses: selected.reduce((s, c) => s + c.courses, 0),
+        credits: selected.reduce((s, c) => s + c.credits, 0),
+      };
+    }
+
+    // 都没有，取所有子节点之和
+    return {
+      courses: childCounts.reduce((s, c) => s + c.courses, 0),
+      credits: childCounts.reduce((s, c) => s + c.credits, 0),
+    };
+  }
+
+  return { courses: 0, credits: 0 };
 }
 
 // ── Phase 1: 自底向上 fulfillment ──
@@ -714,12 +800,19 @@ function fillNodeSummary(
   const summary = csInfo.node.summary;
   summary.is_fulfilled = !!csInfo.node._fulfilled;
 
+  let appliedUnits = 0;
+
   for (const ck of csInfo.courseKeys) {
     const uc = courseStatusMap.get(ck);
     if (!uc) continue;
 
     const appliedReqs = courseApplied.get(ck) ?? [];
     const isApplied = appliedReqs.includes(csInfo.requirementId);
+
+    if (isApplied) {
+      appliedUnits +=
+        csInfo.rule.units_type === 'COURSE' ? 1 : (uc.credits_received ?? 0);
+    }
 
     const suffix = isApplied ? 'applied' : 'unapplied';
     switch (uc.status) {
@@ -735,6 +828,63 @@ function fillNodeSummary(
       case 'SAVED':
         summary[`saved_${suffix}_course_ids`].push(ck);
         break;
+    }
+  }
+
+  summary.applied_units_count = appliedUnits;
+}
+
+// ── Phase 5B: 填充 SELECT summary ──
+
+function fillSelectSummaries(
+  node: any,
+  requirementId: string,
+  courseStatusMap: Map<string, UserCourseInput>,
+  courseApplied: Map<string, string[]>,
+): void {
+  if (node.type === 'SELECT') {
+    // 先递归处理子节点
+    for (const child of node.children) {
+      fillSelectSummaries(child, requirementId, courseStatusMap, courseApplied);
+    }
+
+    // 计算 applied_units_count：遍历所有后代 COURSE_SET 的 applied 课程
+    const rule = node.rule as { required_units_count?: number; units_type?: 'COURSE' | 'CREDIT' };
+    const unitsType = rule.units_type ?? 'COURSE';
+    let appliedUnits = 0;
+    collectAppliedUnits(node, requirementId, courseStatusMap, courseApplied, unitsType, (u) => { appliedUnits += u; });
+
+    node.summary.is_fulfilled = !!node._fulfilled;
+    node.summary.applied_units_count = appliedUnits;
+  }
+}
+
+/**
+ * 递归遍历后代 COURSE_SET，统计 applied 课程的 units 总和。
+ */
+function collectAppliedUnits(
+  node: any,
+  requirementId: string,
+  courseStatusMap: Map<string, UserCourseInput>,
+  courseApplied: Map<string, string[]>,
+  unitsType: 'COURSE' | 'CREDIT',
+  addUnits: (units: number) => void,
+): void {
+  if (node.type === 'COURSE_SET') {
+    for (const ck of node.required_course_ids) {
+      const uc = courseStatusMap.get(ck);
+      if (!uc) continue;
+      const applied = (courseApplied.get(ck) ?? []).includes(requirementId);
+      if (applied) {
+        addUnits(unitsType === 'COURSE' ? 1 : (uc.credits_received ?? 0));
+      }
+    }
+    return;
+  }
+
+  if (node.type === 'SELECT') {
+    for (const child of node.children) {
+      collectAppliedUnits(child, requirementId, courseStatusMap, courseApplied, unitsType, addUnits);
     }
   }
 }

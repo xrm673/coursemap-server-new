@@ -58,9 +58,17 @@ export interface RequirementInfo {
   ui_type: 'GROUP' | 'LIST';
 }
 
-function createEmptySummary() {
+function createEmptySelectSummary() {
   return {
     is_fulfilled: false,
+    applied_units_count: 0,
+  };
+}
+
+function createEmptyCourseSetSummary() {
+  return {
+    is_fulfilled: false,
+    applied_units_count: 0,
     completed_applied_course_ids: [] as string[],
     completed_unapplied_course_ids: [] as string[],
     in_progress_applied_course_ids: [] as string[],
@@ -148,6 +156,7 @@ function buildNode(
       ...base,
       children,
       fulfilled_child_ids: [],
+      summary: createEmptySelectSummary(),
     };
   }
 
@@ -181,7 +190,7 @@ function buildNode(
     return {
       ...base,
       required_course_ids,
-      summary: createEmptySummary(),
+      summary: createEmptyCourseSetSummary(),
     };
   }
 

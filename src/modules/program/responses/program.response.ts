@@ -27,4 +27,6 @@ interface ProgramSummary {
     is_fulfilled: boolean;
     completed_courses_count: number;
     required_courses_count: number;
+    completed_credits_count: number;
+    required_credits_count: number;
 }

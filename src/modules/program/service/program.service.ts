@@ -193,6 +193,8 @@ export class ProgramService {
         is_fulfilled: fulfillment.programFulfilled,
         completed_courses_count: fulfillment.completedCoursesCount,
         required_courses_count: fulfillment.requiredCoursesCount,
+        completed_credits_count: fulfillment.completedCreditsCount,
+        required_credits_count: fulfillment.requiredCreditsCount,
       },
       concentration_names,
       courses,
