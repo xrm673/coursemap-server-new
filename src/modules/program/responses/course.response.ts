@@ -85,6 +85,7 @@ interface Instructor {
 
 interface CourseUserState {
     status: CourseTakingStatus;
+    is_scheduled: boolean;
     credits_received: number;
     semester: string;
     sections_numbers: string[];

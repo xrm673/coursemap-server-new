@@ -234,6 +234,7 @@ function buildUserCourseMap(
       id: row.id,
       course_key: key,
       status,
+      is_scheduled: row.is_scheduled,
       credits_received: row.credits_received,
       semester: row.semester,
       section_numbers: row.user_courses_section.map(

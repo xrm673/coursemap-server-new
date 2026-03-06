@@ -76,6 +76,7 @@ function makeUserCourse(
     id: autoId++,
     course_key: courseKey,
     status,
+    is_scheduled: status !== 'SAVED',
     credits_received: credits,
     semester: null,
     section_numbers: [],

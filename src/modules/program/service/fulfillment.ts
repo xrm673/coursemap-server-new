@@ -38,6 +38,7 @@ export interface UserCourseInput {
   id: number;
   course_key: string;
   status: CourseStatus;
+  is_scheduled: boolean;
   credits_received: number | null;
   semester: string | null;
   section_numbers: string[];

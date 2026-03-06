@@ -209,6 +209,7 @@ export function buildCourseOptions(
       enroll_groups: enrollGroups,
       user_state: {
         status: uc?.status ?? 'NOT_ON_SCHEDULE',
+        is_scheduled: uc?.is_scheduled ?? false,
         credits_received: uc?.credits_received ?? null,
         semester: uc?.semester ?? null,
         sections_numbers: uc?.section_numbers ?? [],
