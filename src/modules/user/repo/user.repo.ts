@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { UserProgramDto } from '../../auth/dto/register.dto';
+import { UserProgramDto } from '../../auth/dto/sign-up.dto';
 
 @Injectable()
 export class UserRepo {

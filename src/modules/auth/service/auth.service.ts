@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { plainToInstance } from 'class-transformer';
 import { UserService } from '../../user/service/user.service';
-import { RegisterDto } from '../dto/register.dto';
+import { SignUpDto } from '../../auth/dto/sign-up.dto';
 import { LoginDto } from '../dto/login.dto';
 import { JwtPayload } from '../strategies/jwt.strategy';
 import { AuthResponse } from '../responses/auth.response';
@@ -19,7 +19,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async signUp(dto: SignUpDto) {
     const { netid, email, password, firstName, lastName, collegeId, entryYear, programs } = dto;
 
     const existingByEmail = await this.userService.findByEmail(email);

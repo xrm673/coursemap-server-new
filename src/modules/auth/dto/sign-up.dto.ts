@@ -23,7 +23,7 @@ export class UserProgramDto {
   concentrationNames: string[];
 }
 
-export class RegisterDto {
+export class SignUpDto {
   @IsString()
   @IsNotEmpty()
   netid: string;
