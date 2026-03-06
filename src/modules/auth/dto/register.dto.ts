@@ -5,7 +5,23 @@ import {
   IsArray,
   ArrayNotEmpty,
   IsNotEmpty,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class UserProgramDto {
+  @IsString()
+  @IsNotEmpty()
+  program_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type: 'major' | 'minor';
+
+  @IsArray()
+  @IsString({ each: true })
+  concentration_names: string[];
+}
 
 export class RegisterDto {
   @IsString()
@@ -37,6 +53,7 @@ export class RegisterDto {
 
   @IsArray()
   @ArrayNotEmpty()
-  @IsString({ each: true })
-  programs: string[];
+  @ValidateNested({ each: true })
+  @Type(() => UserProgramDto)
+  programs: UserProgramDto[];
 }
