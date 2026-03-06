@@ -12,6 +12,25 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+function convertKeysToCamelCase(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(convertKeysToCamelCase);
+  }
+  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => [
+        snakeToCamel(key),
+        convertKeysToCamelCase(value),
+      ]),
+    );
+  }
+  return obj;
+}
+
 @Injectable()
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiResponse<T>>
@@ -23,7 +42,7 @@ export class ResponseInterceptor<T>
     return next.handle().pipe(
       map((data) => ({
         success: true,
-        data,
+        data: convertKeysToCamelCase(data),
       })),
     );
   }

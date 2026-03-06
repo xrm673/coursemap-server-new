@@ -12,7 +12,7 @@ import { Type } from 'class-transformer';
 export class UserProgramDto {
   @IsString()
   @IsNotEmpty()
-  program_id: string;
+  programId: string;
 
   @IsString()
   @IsNotEmpty()
@@ -20,7 +20,7 @@ export class UserProgramDto {
 
   @IsArray()
   @IsString({ each: true })
-  concentration_names: string[];
+  concentrationNames: string[];
 }
 
 export class RegisterDto {
@@ -37,19 +37,19 @@ export class RegisterDto {
 
   @IsString()
   @IsNotEmpty()
-  first_name: string;
+  firstName: string;
 
   @IsString()
   @IsNotEmpty()
-  last_name: string;
+  lastName: string;
 
   @IsString()
   @IsNotEmpty()
-  college_id: string;
+  collegeId: string;
 
   @IsString()
   @IsNotEmpty()
-  entry_year: string;
+  entryYear: string;
 
   @IsArray()
   @ArrayNotEmpty()

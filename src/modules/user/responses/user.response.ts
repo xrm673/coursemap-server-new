@@ -1,24 +1,23 @@
-import { Expose } from 'class-transformer';
+export interface UserCollege {
+  collegeId: string;
+  name: string;
+}
 
-export class UserResponse {
-  @Expose()
+export interface UserProgram {
+  programId: string;
+  name: string;
+  type: string;
+  concentrationNames: string[];
+}
+
+export interface UserResponse {
   id: number;
-
-  @Expose()
   netid: string;
-
-  @Expose()
   email: string;
-
-  @Expose()
-  first_name: string;
-
-  @Expose()
-  last_name: string;
-
-  @Expose()
-  college_id: string;
-
-  @Expose()
-  entry_year: string;
+  firstName: string;
+  lastName: string;
+  entryYear: string;
+  college: UserCollege;
+  programs: UserProgram[];
+  semesters: string[];
 }

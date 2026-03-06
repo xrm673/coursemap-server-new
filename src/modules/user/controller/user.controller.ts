@@ -1,8 +1,6 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
+import { Controller, Get, NotFoundException, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { UserService } from '../service/user.service';
-import { UserResponse } from '../responses/user.response';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -11,7 +9,8 @@ export class UserController {
 
   @Get('me')
   async getMe(@Req() req: any) {
-    const user = await this.userService.findById(req.user.id);
-    return plainToInstance(UserResponse, user, { excludeExtraneousValues: true });
+    const user = await this.userService.findByIdWithDetails(req.user.id);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 }

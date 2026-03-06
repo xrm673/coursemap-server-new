@@ -20,7 +20,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const { netid, email, password, first_name, last_name, college_id, entry_year, programs } = dto;
+    const { netid, email, password, firstName, lastName, collegeId, entryYear, programs } = dto;
 
     const existingByEmail = await this.userService.findByEmail(email);
     if (existingByEmail) {
@@ -39,10 +39,10 @@ export class AuthService {
         netid,
         email,
         password: hashed,
-        first_name,
-        last_name,
-        entry_year,
-        colleges: { connect: { id: college_id } },
+        first_name: firstName,
+        last_name: lastName,
+        entry_year: entryYear,
+        colleges: { connect: { id: collegeId } },
         created_at: new Date(),
         updated_at: new Date(),
       },

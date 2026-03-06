@@ -19,6 +19,37 @@ export class UserRepo {
     return this.prisma.users.findUnique({ where: { id } });
   }
 
+  async findByIdWithDetails(id: number) {
+    return this.prisma.users.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        netid: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        entry_year: true,
+        colleges: {
+          select: { id: true, name: true },
+        },
+        user_program: {
+          select: {
+            programs: {
+              select: { id: true, name: true, type: true },
+            },
+          },
+        },
+        user_concentration: {
+          select: {
+            program_concentrations: {
+              select: { program_id: true, concentration_name: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async findUserContext(userId: number) {
     return this.prisma.users.findUnique({
       where: { id: userId },
@@ -50,11 +81,11 @@ export class UserRepo {
     const concentrationRows: { user_id_placeholder: true; concentration_id: number }[] = [];
 
     for (const program of programs) {
-      for (const name of program.concentration_names) {
+      for (const name of program.concentrationNames) {
         const row = await this.prisma.program_concentrations.findUnique({
           where: {
             program_id_concentration_name: {
-              program_id: program.program_id,
+              program_id: program.programId,
               concentration_name: name,
             },
           },
@@ -63,7 +94,7 @@ export class UserRepo {
 
         if (!row) {
           throw new BadRequestException(
-            `Concentration "${name}" not found for program "${program.program_id}"`,
+            `Concentration "${name}" not found for program "${program.programId}"`,
           );
         }
 
@@ -76,9 +107,9 @@ export class UserRepo {
 
       if (programs.length > 0) {
         await tx.user_program.createMany({
-          data: programs.map(({ program_id }) => ({
+          data: programs.map(({ programId }) => ({
             user_id: user.id,
-            program_id,
+            program_id: programId,
           })),
         });
       }
