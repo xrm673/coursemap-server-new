@@ -12,23 +12,23 @@ let autoId = 1;
 
 function createEmptyCourseSetSummary() {
   return {
-    is_fulfilled: false,
-    applied_units_count: 0,
-    completed_applied_course_ids: [] as string[],
-    completed_unapplied_course_ids: [] as string[],
-    in_progress_applied_course_ids: [] as string[],
-    in_progress_unapplied_course_ids: [] as string[],
-    planned_applied_course_ids: [] as string[],
-    planned_unapplied_course_ids: [] as string[],
-    saved_applied_course_ids: [] as string[],
-    saved_unapplied_course_ids: [] as string[],
+    isFulfilled: false,
+    appliedUnitsCount: 0,
+    completedAppliedCourseIds: [] as string[],
+    completedUnappliedCourseIds: [] as string[],
+    inProgressAppliedCourseIds: [] as string[],
+    inProgressUnappliedCourseIds: [] as string[],
+    plannedAppliedCourseIds: [] as string[],
+    plannedUnappliedCourseIds: [] as string[],
+    savedAppliedCourseIds: [] as string[],
+    savedUnappliedCourseIds: [] as string[],
   };
 }
 
 function createEmptySelectSummary() {
   return {
-    is_fulfilled: false,
-    applied_units_count: 0,
+    isFulfilled: false,
+    appliedUnitsCount: 0,
   };
 }
 
@@ -42,7 +42,7 @@ function makeCourseSet(
     type: 'COURSE_SET' as const,
     title: '',
     rule,
-    required_course_ids: courseKeys,
+    requiredCourseIds: courseKeys,
     summary: createEmptyCourseSetSummary(),
   };
 }
@@ -62,7 +62,7 @@ function makeSelect(
     title: '',
     rule,
     children,
-    fulfilled_child_ids: [] as string[],
+    fulfilledChildIds: [] as string[],
     summary: createEmptySelectSummary(),
   };
 }
@@ -85,7 +85,7 @@ function makeUserCourse(
 }
 
 function makeRequirement(id: string, rootNode: any) {
-  return { info: { id }, root_node: rootNode };
+  return { info: { id }, rootNode };
 }
 
 /** 检查某门课是否被 apply 到了某个 requirement */
@@ -128,8 +128,8 @@ describe('computeFulfillment', () => {
       expect(isApplied(result, 'CS2110', 'req-1')).toBe(true);
       expect(isApplied(result, 'CS2800', 'req-1')).toBe(true);
       // summary
-      expect(cs.summary.is_fulfilled).toBe(true);
-      expect(cs.summary.applied_units_count).toBe(3);
+      expect(cs.summary.isFulfilled).toBe(true);
+      expect(cs.summary.appliedUnitsCount).toBe(3);
     });
 
     it('should not be fulfilled when completed courses < required_units_count', () => {
@@ -148,8 +148,8 @@ describe('computeFulfillment', () => {
 
       expect(result.programFulfilled).toBe(false);
       // summary
-      expect(cs.summary.is_fulfilled).toBe(false);
-      expect(cs.summary.applied_units_count).toBe(2);
+      expect(cs.summary.isFulfilled).toBe(false);
+      expect(cs.summary.appliedUnitsCount).toBe(2);
     });
 
     it('should mark extra courses as unapplied when no parent needs them', () => {
@@ -170,9 +170,9 @@ describe('computeFulfillment', () => {
       expect(result.programFulfilled).toBe(true);
       // 独立 COURSE_SET（无父 SELECT），required_units_count 就是 apply 上限
       // 2 门 applied，1 门 unapplied
-      expect(cs.summary.completed_applied_course_ids).toHaveLength(2);
-      expect(cs.summary.completed_unapplied_course_ids).toHaveLength(1);
-      expect(cs.summary.applied_units_count).toBe(2);
+      expect(cs.summary.completedAppliedCourseIds).toHaveLength(2);
+      expect(cs.summary.completedUnappliedCourseIds).toHaveLength(1);
+      expect(cs.summary.appliedUnitsCount).toBe(2);
     });
   });
 
@@ -275,8 +275,8 @@ describe('computeFulfillment', () => {
 
       expect(result.programFulfilled).toBe(true);
       // SELECT summary
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(2);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(2);
     });
 
     it('should not be fulfilled when too few children are fulfilled', () => {
@@ -306,7 +306,7 @@ describe('computeFulfillment', () => {
       const result = computeFulfillment([req], userCourses, []);
 
       expect(result.programFulfilled).toBe(false);
-      expect(select.summary.is_fulfilled).toBe(false);
+      expect(select.summary.isFulfilled).toBe(false);
     });
   });
 
@@ -350,8 +350,8 @@ describe('computeFulfillment', () => {
 
       // 6 courses >= 6
       expect(result.programFulfilled).toBe(true);
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(6);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(6);
     });
 
     it('should not be fulfilled when total courses < required', () => {
@@ -387,8 +387,8 @@ describe('computeFulfillment', () => {
 
       // 4 < 6
       expect(result.programFulfilled).toBe(false);
-      expect(select.summary.is_fulfilled).toBe(false);
-      expect(select.summary.applied_units_count).toBe(4);
+      expect(select.summary.isFulfilled).toBe(false);
+      expect(select.summary.appliedUnitsCount).toBe(4);
     });
   });
 
@@ -430,8 +430,8 @@ describe('computeFulfillment', () => {
 
       // 3 children fulfilled ✅, 4 courses total ✅
       expect(result.programFulfilled).toBe(true);
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(4);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(4);
     });
 
     it('should not be fulfilled when children count met but units not met', () => {
@@ -466,8 +466,8 @@ describe('computeFulfillment', () => {
 
       // 3 children fulfilled ✅, but 3 courses < 4 ❌
       expect(result.programFulfilled).toBe(false);
-      expect(select.summary.is_fulfilled).toBe(false);
-      expect(select.summary.applied_units_count).toBe(3);
+      expect(select.summary.isFulfilled).toBe(false);
+      expect(select.summary.appliedUnitsCount).toBe(3);
     });
 
     it('should not be fulfilled when units met but children count not met', () => {
@@ -505,8 +505,8 @@ describe('computeFulfillment', () => {
       // A fulfilled ✅, B fulfilled ✅, C not fulfilled ❌ (needs 2, has 0)
       // 2 children < 3 ❌, 4 courses >= 4 ✅
       expect(result.programFulfilled).toBe(false);
-      expect(select.summary.is_fulfilled).toBe(false);
-      expect(select.summary.applied_units_count).toBe(4);
+      expect(select.summary.isFulfilled).toBe(false);
+      expect(select.summary.appliedUnitsCount).toBe(4);
     });
   });
 
@@ -554,10 +554,10 @@ describe('computeFulfillment', () => {
       expect(isApplied(result, 'CS2800', 'req-1')).toBe(true);
       expect(result.programFulfilled).toBe(true);
       // SELECT summary: 4 courses applied
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(4);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(4);
       // COURSE_SET A summary: 2 courses applied despite only needing 1
-      expect(csA.summary.applied_units_count).toBe(2);
+      expect(csA.summary.appliedUnitsCount).toBe(2);
     });
 
     it('should apply extra credits beyond COURSE_SET requirement to meet parent credits (CREDIT)', () => {
@@ -600,10 +600,10 @@ describe('computeFulfillment', () => {
       expect(isApplied(result, 'PHYS3316', 'req-1')).toBe(true);
       expect(result.programFulfilled).toBe(true);
       // SELECT summary: 16 credits applied
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(16);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(16);
       // COURSE_SET A summary: 8 credits applied (2 × 4)
-      expect(csA.summary.applied_units_count).toBe(8);
+      expect(csA.summary.appliedUnitsCount).toBe(8);
     });
   });
 
@@ -699,8 +699,8 @@ describe('computeFulfillment', () => {
       expect(isApplied(result, 'CS2800', 'req-1')).toBe(true);
       expect(isApplied(result, 'CS3110', 'req-1')).toBe(true);
       expect(result.programFulfilled).toBe(true);
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(5);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(5);
     });
 
     it('should not need extra children when existing ones already provide enough units', () => {
@@ -750,8 +750,8 @@ describe('computeFulfillment', () => {
       // D 不需要被激活
       expect(result.programFulfilled).toBe(true);
       expect(isApplied(result, 'CS3110', 'req-1')).toBe(false);
-      expect(select.summary.is_fulfilled).toBe(true);
-      expect(select.summary.applied_units_count).toBe(5);
+      expect(select.summary.isFulfilled).toBe(true);
+      expect(select.summary.appliedUnitsCount).toBe(5);
     });
   });
 

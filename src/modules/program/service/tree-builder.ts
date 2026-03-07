@@ -53,30 +53,30 @@ export interface RequirementInfo {
   id: string;
   name: string;
   description: string[];
-  program_id: string;
-  concentration_name: string | null;
-  ui_type: 'GROUP' | 'LIST';
+  programId: string;
+  concentrationName: string | null;
+  uiType: 'GROUP' | 'LIST';
 }
 
 function createEmptySelectSummary() {
   return {
-    is_fulfilled: false,
-    applied_units_count: 0,
+    isFulfilled: false,
+    appliedUnitsCount: 0,
   };
 }
 
 function createEmptyCourseSetSummary() {
   return {
-    is_fulfilled: false,
-    applied_units_count: 0,
-    completed_applied_course_ids: [] as string[],
-    completed_unapplied_course_ids: [] as string[],
-    in_progress_applied_course_ids: [] as string[],
-    in_progress_unapplied_course_ids: [] as string[],
-    planned_applied_course_ids: [] as string[],
-    planned_unapplied_course_ids: [] as string[],
-    saved_applied_course_ids: [] as string[],
-    saved_unapplied_course_ids: [] as string[],
+    isFulfilled: false,
+    appliedUnitsCount: 0,
+    completedAppliedCourseIds: [] as string[],
+    completedUnappliedCourseIds: [] as string[],
+    inProgressAppliedCourseIds: [] as string[],
+    inProgressUnappliedCourseIds: [] as string[],
+    plannedAppliedCourseIds: [] as string[],
+    plannedUnappliedCourseIds: [] as string[],
+    savedAppliedCourseIds: [] as string[],
+    savedUnappliedCourseIds: [] as string[],
   };
 }
 
@@ -108,18 +108,18 @@ export function buildRequirementTrees(
       id: req.id,
       name: req.name,
       description: Array.isArray(req.description) ? req.description : [],
-      program_id: req.program_id,
-      concentration_name: req.concentration_id
+      programId: req.program_id,
+      concentrationName: req.concentration_id
         ? concentrationMap.get(req.concentration_id) ?? null
         : null,
-      ui_type: req.ui_type as 'GROUP' | 'LIST',
+      uiType: req.ui_type as 'GROUP' | 'LIST',
     };
 
-    const root_node = req.root_node_id
+    const rootNode = req.root_node_id
       ? buildNode(req.root_node_id, nodeMap, courseEntryMap, courseMetaMap)
       : null;
 
-    return { info, root_node };
+    return { info, rootNode };
   });
 
   return {
@@ -155,13 +155,13 @@ function buildNode(
     return {
       ...base,
       children,
-      fulfilled_child_ids: [],
+      fulfilledChildIds: [],
       summary: createEmptySelectSummary(),
     };
   }
 
   if (node.type === 'COURSE_SET') {
-    const required_course_ids = node.courses.map((nc) => {
+    const requiredCourseIds = node.courses.map((nc) => {
       const key = courseKey(nc.course_id, nc.topic);
 
       // 收集课程条目
@@ -189,7 +189,7 @@ function buildNode(
 
     return {
       ...base,
-      required_course_ids,
+      requiredCourseIds,
       summary: createEmptyCourseSetSummary(),
     };
   }

@@ -5,103 +5,103 @@ export interface CourseOption {
     id: string;
     topic: string;
     type: CourseOptionType;
-    course_info: CourseInfo;
-    enroll_groups: EnrollGroup[];
-    user_state: CourseUserState;
-    combined_course_info: CombinedCourseInfo;
+    courseInfo: CourseInfo;
+    enrollGroups: EnrollGroup[];
+    userState: CourseUserState;
+    combinedCourseInfo: CombinedCourseInfo;
 }
 
 interface CourseInfo {
     subject: string;
     number: string;
     level: number;
-    title_short: string;
-    title_long: string;
+    titleShort: string;
+    titleLong: string;
     description: string;
-    enrollment_priority: string;
-    forbidden_overlaps: string;
+    enrollmentPriority: string;
+    forbiddenOverlaps: string;
     prereq: string;
     coreq: string;
     fee: string;
-    acad_career: string;
-    acad_group: string;
-    last_offered_semester: string;
-    last_offered_year: number;
-    course_attributes: CourseAttribute[];
-    satisfies_requirements: string[];
+    acadCareer: string;
+    acadGroup: string;
+    lastOfferedSemester: string;
+    lastOfferedYear: number;
+    courseAttributes: CourseAttribute[];
+    satisfiesRequirements: string[];
 }
 
 interface CourseAttribute {
-    attribute_value: string;
-    attribute_type: string;
+    attributeValue: string;
+    attributeType: string;
 }
 
 interface EnrollGroup {
     id: number;
     semester: string;
-    first_section_number: string;
+    firstSectionNumber: string;
     topic: string;
-    credits_minimum: number;
-    credits_maximum: number;
-    grading_basis: string;
-    session_code: string;
-    combined_group_id: number;
-    class_sections: ClassSection[];
+    creditsMinimum: number;
+    creditsMaximum: number;
+    gradingBasis: string;
+    sessionCode: string;
+    combinedGroupId: number;
+    classSections: ClassSection[];
 }
 
 interface ClassSection {
     id: number;
-    section_type: string;
-    section_number: string;
-    class_nbr: number;
+    sectionType: string;
+    sectionNumber: string;
+    classNbr: number;
     location: string;
     campus: string;
-    start_date: string;
-    end_date: string;
-    add_consent: string;
-    is_component_graded: boolean;
-    instruction_mode: string;
-    section_topic: string;
-    open_status: string;
+    startDate: string;
+    endDate: string;
+    addConsent: string;
+    isComponentGraded: boolean;
+    instructionMode: string;
+    sectionTopic: string;
+    openStatus: string;
     meetings: Meeting[];
 }
 
 interface Meeting {
     id: number;
-    time_start: string;
-    time_end: string;
+    timeStart: string;
+    timeEnd: string;
     pattern: string;
-    start_date: string;
-    end_date: string;
+    startDate: string;
+    endDate: string;
     instructors: Instructor[];
 }
 
 interface Instructor {
     netid: string;
-    first_name: string;
-    middle_name: string;
-    last_name: string;
+    firstName: string;
+    middleName: string;
+    lastName: string;
 }
 
 interface CourseUserState {
     status: CourseTakingStatus;
-    is_scheduled: boolean;
-    credits_received: number;
+    isScheduled: boolean;
+    creditsReceived: number;
     semester: string;
-    sections_numbers: string[];
-    is_semester_available: boolean;
-    is_location_available: boolean;
-    applies_to_requirements: string[];
-    unapplies_to_requirements: UnappliesToRequirement[];
+    sectionNumbers: string[];
+    isSemesterAvailable: boolean;
+    isLocationAvailable: boolean;
+    appliesToRequirements: string[];
+    unappliesToRequirements: UnappliesToRequirement[];
 }
 
 interface CombinedCourseInfo {
-    combined_group_id: number;
-    combined_course_ids: string[];
+    combinedGroupId: number;
+    combinedCourseIds: string[];
 }
 
 interface UnappliesToRequirement {
-    requirement_id: string;
+    requirementId: string;
     reason: "OVERLIMIT" | "CONFLICT" | "INACTIVE";
-    blocked_by_requirement_id: string;
+    blockedByRequirementId: string;
 }

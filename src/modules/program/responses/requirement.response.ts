@@ -1,26 +1,26 @@
 export interface Requirement {
     info: RequirementInfo;
-    root_node: Select | CourseSet;
+    rootNode: Select | CourseSet;
 }
 
 interface RequirementInfo {
     id: string;
     name: string;
     description: string[];
-    program_id: string;
-    concentration_name: string;
-    ui_type: "GROUP" | "LIST";
+    programId: string;
+    concentrationName: string;
+    uiType: "GROUP" | "LIST";
 }
 
 interface SelectRule {
-    required_children_count?: number;
-    required_units_count?: number;
-    units_type?: "COURSE" | "CREDIT";
+    requiredChildrenCount?: number;
+    requiredUnitsCount?: number;
+    unitsType?: "COURSE" | "CREDIT";
 }
 
 interface CourseSetRule {
-    required_units_count: number;
-    units_type: "COURSE" | "CREDIT";
+    requiredUnitsCount: number;
+    unitsType: "COURSE" | "CREDIT";
 }
 
 interface NodeBase {
@@ -33,34 +33,34 @@ interface NodeBase {
 interface Select extends NodeBase {
     type: "SELECT";
     children: (Select | CourseSet)[];
-    fulfilled_child_ids: string[];
+    fulfilledChildIds: string[];
     summary: SelectSummary;
 }
 
 interface SelectSummary {
-    is_fulfilled: boolean;
-    applied_units_count: number;
+    isFulfilled: boolean;
+    appliedUnitsCount: number;
 }
 
 interface CourseSet extends NodeBase {
     type: "COURSE_SET";
-    required_course_ids: string[];
+    requiredCourseIds: string[];
     summary: CourseSetSummary;
 }
 
 interface CourseSetSummary {
-    is_fulfilled: boolean;
-    applied_units_count: number;
-    
-    completed_applied_course_ids: string[];
-    completed_unapplied_course_ids: string[];
-    
-    in_progress_applied_course_ids: string[];
-    in_progress_unapplied_course_ids: string[];
-    
-    planned_applied_course_ids: string[];
-    planned_unapplied_course_ids: string[];
-    
-    saved_applied_course_ids: string[];
-    saved_unapplied_course_ids: string[];
+    isFulfilled: boolean;
+    appliedUnitsCount: number;
+
+    completedAppliedCourseIds: string[];
+    completedUnappliedCourseIds: string[];
+
+    inProgressAppliedCourseIds: string[];
+    inProgressUnappliedCourseIds: string[];
+
+    plannedAppliedCourseIds: string[];
+    plannedUnappliedCourseIds: string[];
+
+    savedAppliedCourseIds: string[];
+    savedUnappliedCourseIds: string[];
 }

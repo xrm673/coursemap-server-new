@@ -54,9 +54,9 @@ export interface DomainMembershipInput {
 // ── 输出类型 ──
 
 export interface UnappliesToEntry {
-  requirement_id: string;
+  requirementId: string;
   reason: 'OVERLIMIT' | 'CONFLICT' | 'INACTIVE';
-  blocked_by_requirement_id: string;
+  blockedByRequirementId: string;
 }
 
 export interface FulfillmentResult {
@@ -104,7 +104,7 @@ export function determineStatus(
 // ── 主函数 ──
 
 export function computeFulfillment(
-  requirements: { info: { id: string }; root_node: any }[],
+  requirements: { info: { id: string }; rootNode: any }[],
   userCourses: UserCourseInput[],
   domainMemberships: DomainMembershipInput[],
 ): FulfillmentResult {
@@ -124,25 +124,25 @@ export function computeFulfillment(
 
   // ── Phase 1: 自底向上 fulfillment ──
   for (const req of requirements) {
-    if (req.root_node) {
-      bottomUpFulfillment(req.root_node, courseStatusMap);
+    if (req.rootNode) {
+      bottomUpFulfillment(req.rootNode, courseStatusMap);
     }
   }
 
   // ── Phase 2: 自顶向下 activation ──
   const activeNodeIds = new Set<string>();
   for (const req of requirements) {
-    if (req.root_node) {
-      topDownActivation(req.root_node, true, activeNodeIds);
+    if (req.rootNode) {
+      topDownActivation(req.rootNode, true, activeNodeIds);
     }
   }
 
   // ── Phase 3: 收集 COURSE_SET 信息 ──
   const courseSetInfos: CourseSetInfo[] = [];
   for (const req of requirements) {
-    if (req.root_node) {
+    if (req.rootNode) {
       collectCourseSets(
-        req.root_node,
+        req.rootNode,
         req.info.id,
         activeNodeIds,
         courseSetInfos,
@@ -159,9 +159,9 @@ export function computeFulfillment(
 
   // ── Phase 4B: 补充分配（满足父级 SELECT 的 required_units_count） ──
   for (const req of requirements) {
-    if (req.root_node) {
+    if (req.rootNode) {
       satisfySelectUnits(
-        req.root_node,
+        req.rootNode,
         req.info.id,
         courseStatusMap,
         applyState.courseApplied,
@@ -181,9 +181,9 @@ export function computeFulfillment(
 
   // ── Phase 5B: 填充 SELECT summary ──
   for (const req of requirements) {
-    if (req.root_node) {
+    if (req.rootNode) {
       fillSelectSummaries(
-        req.root_node,
+        req.rootNode,
         req.info.id,
         courseStatusMap,
         applyState.courseApplied,
@@ -202,11 +202,11 @@ export function computeFulfillment(
   let requiredCoursesCount = 0;
   let requiredCreditsCount = 0;
   for (const req of requirements) {
-    if (req.root_node) {
-      if (!req.root_node._fulfilled) {
+    if (req.rootNode) {
+      if (!req.rootNode._fulfilled) {
         programFulfilled = false;
       }
-      const reqCounts = computeRequiredUnits(req.root_node);
+      const reqCounts = computeRequiredUnits(req.rootNode);
       requiredCoursesCount += reqCounts.courses;
       requiredCreditsCount += reqCounts.credits;
     }
@@ -313,7 +313,7 @@ function bottomUpFulfillment(
   if (node.type === 'COURSE_SET') {
     let completedCourses = 0;
     let completedCredits = 0;
-    for (const ck of node.required_course_ids) {
+    for (const ck of node.requiredCourseIds) {
       const uc = courseStatusMap.get(ck);
       if (uc && uc.status === 'COMPLETED') {
         completedCourses++;
@@ -353,12 +353,12 @@ function bottomUpFulfillment(
       if (fulfilledChildIds.length < rule.required_children_count) {
         fulfilled = false;
       }
-      node.fulfilled_child_ids = fulfilledChildIds.slice(
+      node.fulfilledChildIds = fulfilledChildIds.slice(
         0,
         rule.required_children_count,
       );
     } else {
-      node.fulfilled_child_ids = fulfilledChildIds;
+      node.fulfilledChildIds = fulfilledChildIds;
     }
 
     // 检查 required_units_count
@@ -409,7 +409,7 @@ function topDownActivation(
         // 未 fulfilled 的 SELECT → 所有 children active
         childActive =
           isActive &&
-          (!node._fulfilled || node.fulfilled_child_ids.includes(child.id));
+          (!node._fulfilled || node.fulfilledChildIds.includes(child.id));
       }
 
       topDownActivation(child, childActive, activeNodeIds);
@@ -430,7 +430,7 @@ function collectCourseSets(
       nodeId: node.id,
       requirementId,
       rule: node.rule,
-      courseKeys: [...node.required_course_ids],
+      courseKeys: [...node.requiredCourseIds],
       isActive: activeNodeIds.has(node.id),
       node,
     });
@@ -547,9 +547,9 @@ function applyCourses(
   ) {
     const list = courseUnapplied.get(ck) ?? [];
     list.push({
-      requirement_id: requirementId,
+      requirementId: requirementId,
       reason: reason as UnappliesToEntry['reason'],
-      blocked_by_requirement_id: blockedBy ?? '',
+      blockedByRequirementId: blockedBy ?? '',
     });
     courseUnapplied.set(ck, list);
   }
@@ -733,7 +733,7 @@ function satisfySelectUnits(
     if (unapplied) {
       const idx = unapplied.findIndex(
         (u) =>
-          u.requirement_id === requirementId && u.reason === 'OVERLIMIT',
+          u.requirementId === requirementId && u.reason === 'OVERLIMIT',
       );
       if (idx >= 0) unapplied.splice(idx, 1);
       if (unapplied.length === 0) courseUnapplied.delete(candidate.ck);
@@ -761,7 +761,7 @@ function collectUnitsAndCandidates(
   addCandidate: (ck: string, credits: number, nodeId: string) => void,
 ): void {
   if (node.type === 'COURSE_SET') {
-    for (const ck of node.required_course_ids) {
+    for (const ck of node.requiredCourseIds) {
       const uc = courseStatusMap.get(ck);
       if (!uc) continue;
 
@@ -799,7 +799,7 @@ function fillNodeSummary(
   courseApplied: Map<string, string[]>,
 ): void {
   const summary = csInfo.node.summary;
-  summary.is_fulfilled = !!csInfo.node._fulfilled;
+  summary.isFulfilled = !!csInfo.node._fulfilled;
 
   let appliedUnits = 0;
 
@@ -815,24 +815,27 @@ function fillNodeSummary(
         csInfo.rule.units_type === 'COURSE' ? 1 : (uc.credits_received ?? 0);
     }
 
-    const suffix = isApplied ? 'applied' : 'unapplied';
     switch (uc.status) {
       case 'COMPLETED':
-        summary[`completed_${suffix}_course_ids`].push(ck);
+        if (isApplied) summary.completedAppliedCourseIds.push(ck);
+        else summary.completedUnappliedCourseIds.push(ck);
         break;
       case 'IN_PROGRESS':
-        summary[`in_progress_${suffix}_course_ids`].push(ck);
+        if (isApplied) summary.inProgressAppliedCourseIds.push(ck);
+        else summary.inProgressUnappliedCourseIds.push(ck);
         break;
       case 'PLANNED':
-        summary[`planned_${suffix}_course_ids`].push(ck);
+        if (isApplied) summary.plannedAppliedCourseIds.push(ck);
+        else summary.plannedUnappliedCourseIds.push(ck);
         break;
       case 'SAVED':
-        summary[`saved_${suffix}_course_ids`].push(ck);
+        if (isApplied) summary.savedAppliedCourseIds.push(ck);
+        else summary.savedUnappliedCourseIds.push(ck);
         break;
     }
   }
 
-  summary.applied_units_count = appliedUnits;
+  summary.appliedUnitsCount = appliedUnits;
 }
 
 // ── Phase 5B: 填充 SELECT summary ──
@@ -855,8 +858,8 @@ function fillSelectSummaries(
     let appliedUnits = 0;
     collectAppliedUnits(node, requirementId, courseStatusMap, courseApplied, unitsType, (u) => { appliedUnits += u; });
 
-    node.summary.is_fulfilled = !!node._fulfilled;
-    node.summary.applied_units_count = appliedUnits;
+    node.summary.isFulfilled = !!node._fulfilled;
+    node.summary.appliedUnitsCount = appliedUnits;
   }
 }
 
@@ -872,7 +875,7 @@ function collectAppliedUnits(
   addUnits: (units: number) => void,
 ): void {
   if (node.type === 'COURSE_SET') {
-    for (const ck of node.required_course_ids) {
+    for (const ck of node.requiredCourseIds) {
       const uc = courseStatusMap.get(ck);
       if (!uc) continue;
       const applied = (courseApplied.get(ck) ?? []).includes(requirementId);

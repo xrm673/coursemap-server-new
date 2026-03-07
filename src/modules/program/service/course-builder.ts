@@ -153,21 +153,21 @@ export function buildCourseOptions(
       ? matchingEgs.filter((eg) => eg.semester === targetSemester)
       : [];
 
-    // 组装 enroll_groups（含 sections → meetings → instructors）
+    // 组装 enrollGroups（含 sections → meetings → instructors）
     const enrollGroups = selectedEgs.map((eg) => ({
       id: eg.id,
       semester: eg.semester,
-      first_section_number: eg.first_section_number,
+      firstSectionNumber: eg.first_section_number,
       topic: eg.topic,
-      credits_minimum: eg.credits_minimum,
-      credits_maximum: eg.credits_maximum,
-      grading_basis: eg.grading_basis,
-      session_code: eg.session_code,
-      combined_group_id: eg.combined_group_id,
-      class_sections: (sectionsByEgId.get(eg.id) ?? []).map(buildSection),
+      creditsMinimum: eg.credits_minimum,
+      creditsMaximum: eg.credits_maximum,
+      gradingBasis: eg.grading_basis,
+      sessionCode: eg.session_code,
+      combinedGroupId: eg.combined_group_id,
+      classSections: (sectionsByEgId.get(eg.id) ?? []).map(buildSection),
     }));
 
-    // 组装 combined_course_info
+    // 组装 combinedCourseInfo
     const combinedGroupId = meta?.combined_group_id ?? null;
     const combinedCourseIds = combinedGroupId
       ? (combinedCourseMap.get(combinedGroupId) ?? []).filter(
@@ -184,47 +184,47 @@ export function buildCourseOptions(
       id: entry.course_id,
       topic: entry.topic,
       type: 'COURSE',
-      course_info: {
+      courseInfo: {
         subject: course.subject,
         number: course.number,
         level: course.level,
-        title_short: course.title_short,
-        title_long: course.title_long,
+        titleShort: course.title_short,
+        titleLong: course.title_long,
         description: course.description,
-        enrollment_priority: course.enrollment_priority,
-        forbidden_overlaps: course.forbidden_overlaps,
+        enrollmentPriority: course.enrollment_priority,
+        forbiddenOverlaps: course.forbidden_overlaps,
         prereq: course.prereq,
         coreq: course.coreq,
         fee: course.fee,
-        acad_career: course.acad_career,
-        acad_group: course.acad_group,
-        last_offered_semester: course.last_offered_semester,
-        last_offered_year: course.last_offered_year,
-        course_attributes: course.course_attributes.map((a) => ({
-          attribute_value: a.attribute_value,
-          attribute_type: a.attribute_type,
+        acadCareer: course.acad_career,
+        acadGroup: course.acad_group,
+        lastOfferedSemester: course.last_offered_semester,
+        lastOfferedYear: course.last_offered_year,
+        courseAttributes: course.course_attributes.map((a) => ({
+          attributeValue: a.attribute_value,
+          attributeType: a.attribute_type,
         })),
-        satisfies_requirements: meta?.requirement_ids ?? [],
+        satisfiesRequirements: meta?.requirement_ids ?? [],
       },
-      enroll_groups: enrollGroups,
-      user_state: {
+      enrollGroups: enrollGroups,
+      userState: {
         status: uc?.status ?? 'NOT_ON_SCHEDULE',
-        is_scheduled: uc?.is_scheduled ?? false,
-        credits_received: uc?.credits_received ?? null,
+        isScheduled: uc?.is_scheduled ?? false,
+        creditsReceived: uc?.credits_received ?? null,
         semester: uc?.semester ?? null,
-        sections_numbers: uc?.section_numbers ?? [],
-        is_semester_available: isSemesterAvailable,
-        is_location_available: !enrollGroups
-          .flatMap((eg) => eg.class_sections)
+        sectionNumbers: uc?.section_numbers ?? [],
+        isSemesterAvailable: isSemesterAvailable,
+        isLocationAvailable: !enrollGroups
+          .flatMap((eg) => eg.classSections)
           .some(
             (s) => s.location && UNAVAILABLE_LOCATIONS.includes(s.location),
           ),
-        applies_to_requirements: applies,
-        unapplies_to_requirements: unapplies,
+        appliesToRequirements: applies,
+        unappliesToRequirements: unapplies,
       },
-      combined_course_info: {
-        combined_group_id: combinedGroupId,
-        combined_course_ids: combinedCourseIds,
+      combinedCourseInfo: {
+        combinedGroupId: combinedGroupId,
+        combinedCourseIds: combinedCourseIds,
       },
     };
   }
@@ -237,30 +237,30 @@ export function buildCourseOptions(
 function buildSection(section: SectionRow) {
   return {
     id: section.id,
-    section_type: section.section_type,
-    section_number: section.section_number,
-    class_nbr: section.class_nbr,
+    sectionType: section.section_type,
+    sectionNumber: section.section_number,
+    classNbr: section.class_nbr,
     location: section.location,
     campus: section.campus,
-    start_date: formatDate(section.start_date),
-    end_date: formatDate(section.end_date),
-    add_consent: section.add_consent,
-    is_component_graded: section.is_component_graded,
-    instruction_mode: section.instruction_mode,
-    section_topic: section.section_topic,
-    open_status: section.open_status,
+    startDate: formatDate(section.start_date),
+    endDate: formatDate(section.end_date),
+    addConsent: section.add_consent,
+    isComponentGraded: section.is_component_graded,
+    instructionMode: section.instruction_mode,
+    sectionTopic: section.section_topic,
+    openStatus: section.open_status,
     meetings: section.meetings.map((m) => ({
       id: m.id,
-      time_start: m.time_start,
-      time_end: m.time_end,
+      timeStart: m.time_start,
+      timeEnd: m.time_end,
       pattern: m.pattern,
-      start_date: formatDate(m.start_date),
-      end_date: formatDate(m.end_date),
+      startDate: formatDate(m.start_date),
+      endDate: formatDate(m.end_date),
       instructors: m.meeting_instructors.map((mi) => ({
         netid: mi.instructors.netid,
-        first_name: mi.instructors.first_name,
-        middle_name: mi.instructors.middle_name,
-        last_name: mi.instructors.last_name,
+        firstName: mi.instructors.first_name,
+        middleName: mi.instructors.middle_name,
+        lastName: mi.instructors.last_name,
       })),
     })),
   };

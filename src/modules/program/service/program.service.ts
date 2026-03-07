@@ -47,11 +47,11 @@ export class ProgramService {
         id: cp.colleges.id,
         name: cp.colleges.name,
       })),
-      relevant_subjects: program.program_subjects.map((ps) => ps.subject_id),
+      relevantSubjects: program.program_subjects.map((ps) => ps.subject_id),
     };
 
-    // ── 组装 concentration_names ──
-    const concentration_names = program.program_concentrations.map(
+    // ── 组装 concentrationNames ──
+    const concentrationNames = program.program_concentrations.map(
       (pc) => pc.concentration_name,
     );
 
@@ -187,16 +187,16 @@ export class ProgramService {
     return {
       info,
       summary: {
-        is_user_program: userCtx.user_program.some(
+        isUserProgram: userCtx.user_program.some(
           (up) => up.program_id === programId,
         ),
-        is_fulfilled: fulfillment.programFulfilled,
-        completed_courses_count: fulfillment.completedCoursesCount,
-        required_courses_count: fulfillment.requiredCoursesCount,
-        completed_credits_count: fulfillment.completedCreditsCount,
-        required_credits_count: fulfillment.requiredCreditsCount,
+        isFulfilled: fulfillment.programFulfilled,
+        completedCoursesCount: fulfillment.completedCoursesCount,
+        requiredCoursesCount: fulfillment.requiredCoursesCount,
+        completedCreditsCount: fulfillment.completedCreditsCount,
+        requiredCreditsCount: fulfillment.requiredCreditsCount,
       },
-      concentration_names,
+      concentrationNames,
       courses,
       requirements,
     };

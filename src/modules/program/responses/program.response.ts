@@ -4,7 +4,7 @@ import { Requirement } from "./requirement.response";
 export interface ProgramResponse {
     info: ProgramInfo;
     summary: ProgramSummary;
-    concentration_names: string[];
+    concentrationNames: string[];
     courses: Record<string, CourseOption>;
     requirements: Requirement[];
 }
@@ -14,7 +14,7 @@ interface ProgramInfo {
     name: string;
     type: "major" | "minor";
     colleges: CollegeInProgram[];
-    relevant_subjects: string[];
+    relevantSubjects: string[];
 }
 
 interface CollegeInProgram {
@@ -23,10 +23,10 @@ interface CollegeInProgram {
 }
 
 interface ProgramSummary {
-    is_user_program: boolean;
-    is_fulfilled: boolean;
-    completed_courses_count: number;
-    required_courses_count: number;
-    completed_credits_count: number;
-    required_credits_count: number;
+    isUserProgram: boolean;
+    isFulfilled: boolean;
+    completedCoursesCount: number;
+    requiredCoursesCount: number;
+    completedCreditsCount: number;
+    requiredCreditsCount: number;
 }
